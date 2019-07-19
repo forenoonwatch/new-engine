@@ -1,0 +1,19 @@
+TEXTURE Bricks "./res/textures/bricks.dds"
+TEXTURE BricksNormal "./res/textures/bricks_normal.dds"
+TEXTURE Grass "./res/textures/grass.dds"
+TEXTURE GrassNormal "./res/textures/grass_normal.dds"
+TEXTURE DefaultNormal "./res/textures/default_normal.jpg"
+TEXTURE Water "./res/textures/water.dds"
+
+MATERIAL Bricks Bricks BricksNormal
+MATERIAL Grass Grass DefaultNormal
+MATERIAL Water Water DefaultNormal
+
+# right left up down front back
+CUBEMAP Skybox "./res/textures/skybox/right.jpg" "./res/textures/skybox/left.jpg" "./res/textures/skybox/top.jpg" "./res/textures/skybox/bottom.jpg" "./res/textures/skybox/front.jpg" "./res/textures/skybox/back.jpg"
+
+FONT LucidaTypewriterRegular24 "./res/fonts/LucidaTypewriterRegular.ttf" 24
+
+MESH "./res/models/cowboy.fbx" ARRAY Cowboy ANIMATION Run RIG CowboyRig
+MESH "./res/models/monkey3.obj" ARRAY MonkeyHead MODEL MonkeyHead
+MESH "./res/models/terrain-2.fbx" ARRAY Terrain MODEL Terrain

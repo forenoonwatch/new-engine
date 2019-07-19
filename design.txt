@@ -1,0 +1,51 @@
+Game
+	- Map
+		- Terrain
+			- Terrain Cell
+				- Visual Model
+				- Collision Model
+			- Textures/Multitextures/Materials
+		- Sky
+			- Texture(s)
+			- Shader
+		- Buildings/Artifices
+			- ID
+			- Model(s)
+				- Material(s)
+			- Collision Model(s)
+			- Interactible Subcomponenets
+		- Flora
+			- Models
+			- Materials
+			- Locations
+			- Shaders
+	- Players
+		- Player
+			- Name/Tag
+			- ID
+			- Team
+			- Character
+				- Model(s)
+					- Material(s)
+					- Rig(s)
+					- Animations
+				- Collision Model(s)
+				- Health/Health Data
+				- Motion Controller
+				- Tools/Weapons
+					- Tool / Weapon
+	- Mobile Artifices / Controllable Artifices / Vehicles
+		- Mobile Artifice
+			- Model(s)
+				- Material(s)
+				- Rig(s)
+				- Animation(s)
+			- Collision Model(s)
+			- Interactible Subcomponents
+			- Motion Controller
+	- Gamemode Manager
+		- Teams
+			- Team
+		- Round
+			- Round Timer
+			- Tickets/Lives/Objectives (Variant based on Round type)
