@@ -54,6 +54,17 @@ class Texture {
 			width = bmp.getWidth();
 			height = bmp.getHeight();
 		}
+
+		inline Texture(RenderDevice& deviceIn,
+				enum RenderDevice::PixelFormat internalPixelFormat,
+				uint32 width, uint32 height)
+			: device(&deviceIn)
+			, texId(device->createTexture2D(width, height, nullptr,
+						RenderDevice::FORMAT_RGBA, internalPixelFormat, false, false))
+			, width(width)
+			, height(height)
+			, compressed(false)
+			, mipmaps(false) {}
 			
 		inline ~Texture() {
 			texId = device->releaseTexture2D(texId);

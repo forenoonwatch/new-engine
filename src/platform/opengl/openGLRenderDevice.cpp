@@ -601,33 +601,38 @@ static GLint getOpenGLFormat(enum OpenGLRenderDevice::PixelFormat format)
 	};
 }
 
-static GLint getOpenGLInternalFormat(enum OpenGLRenderDevice::PixelFormat format, bool compress)
-{
+static GLint getOpenGLInternalFormat(enum OpenGLRenderDevice::PixelFormat format, bool compress) {
 	switch(format) {
-	case OpenGLRenderDevice::FORMAT_R: return GL_RED;
-	case OpenGLRenderDevice::FORMAT_RG: return GL_RG;
-	case OpenGLRenderDevice::FORMAT_RGB: 
-		if(compress) {
-			return GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
-		} else {
-			return GL_RGB;
-			//return GL_SRGB;
-		}
-	case OpenGLRenderDevice::FORMAT_RGBA:
-		if(compress) {
-			// TODO: Decide on the default RGBA compression scheme
-//			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
-		} else {
-			return GL_RGBA;
-			//return GL_SRGB_ALPHA;
-		}
-	case OpenGLRenderDevice::FORMAT_DEPTH: return GL_DEPTH_COMPONENT;
-	case OpenGLRenderDevice::FORMAT_DEPTH_AND_STENCIL: return GL_DEPTH_STENCIL;
-	default:
-		DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "PixelFormat %d is not a valid PixelFormat.",
-				format);
-		return 0;
+		case OpenGLRenderDevice::FORMAT_R:
+			return GL_RED;
+		case OpenGLRenderDevice::FORMAT_RG:
+			return GL_RG;
+		case OpenGLRenderDevice::FORMAT_RGB: 
+			if (compress) {
+				return GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+			}
+			else {
+				return GL_RGB;
+				//return GL_SRGB;
+			}
+		case OpenGLRenderDevice::FORMAT_RGBA:
+			if (compress) {
+				// TODO: Decide on the default RGBA compression scheme
+	//			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+			}
+			else {
+				return GL_RGBA;
+				//return GL_SRGB_ALPHA;
+			}
+		case OpenGLRenderDevice::FORMAT_DEPTH:
+			return GL_DEPTH_COMPONENT;
+		case OpenGLRenderDevice::FORMAT_DEPTH_AND_STENCIL:
+			return GL_DEPTH_STENCIL;
+		default:
+			DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "PixelFormat %d is not a valid PixelFormat.",
+					format);
+			return 0;
 	};
 }
 
@@ -774,12 +779,10 @@ uint32 OpenGLRenderDevice::releaseUniformBuffer(uint32 buffer) {
 	return 0;
 }
 
-uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText)
-{
+uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText) {
 	GLuint shaderProgram = glCreateProgram();
 
-	if(shaderProgram == 0) 
-	{
+	if (shaderProgram == 0) {
 		DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "Error creating shader program\n");
         return (uint32)-1;
     }
@@ -791,23 +794,33 @@ uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText)
 		"\n#define FS_BUILD\n#define GLSL_VERSION " + version + "\n" + shaderText;
 
 	ShaderProgram programData;
-	if(!addShader(shaderProgram, vertexShaderText, GL_VERTEX_SHADER,
+	if (!addShader(shaderProgram, vertexShaderText, GL_VERTEX_SHADER,
 				&programData.shaders)) {
 		return (uint32)-1; 
 	}
-	if(!addShader(shaderProgram, fragmentShaderText, GL_FRAGMENT_SHADER,
+	if (!addShader(shaderProgram, fragmentShaderText, GL_FRAGMENT_SHADER,
 				&programData.shaders)) {
 		return (uint32)-1;
 	}
+
+	if (shaderText.find("GS_BUILD") != String::npos) {
+		String geomShaderText = "#version " + version
+			+ "\n#define GS_BUILD\n#define GLSL_VERSION " + version + "\n" + shaderText;
+
+		if (!addShader(shaderProgram, geomShaderText, GL_GEOMETRY_SHADER,
+				&programData.shaders)) {
+			return (uint32)-1;
+		}
+	}
 	
 	glLinkProgram(shaderProgram);
-	if(checkShaderError(shaderProgram, GL_LINK_STATUS,
+	if (checkShaderError(shaderProgram, GL_LINK_STATUS,
 				true, "Error linking shader program")) {
 		return (uint32)-1;
 	}
 
     glValidateProgram(shaderProgram);
-	if(checkShaderError(shaderProgram, GL_VALIDATE_STATUS,
+	if (checkShaderError(shaderProgram, GL_VALIDATE_STATUS,
 				true, "Invalid shader program")) {
 		return (uint32)-1;
 	}
@@ -853,18 +866,28 @@ uint32 OpenGLRenderDevice::releaseShaderProgram(uint32 shader) {
 	const struct ShaderProgram* shaderProgram = &programIt->second; 
 
 	for(Array<uint32>::const_iterator it = shaderProgram->shaders.begin();
-			it != shaderProgram->shaders.end(); ++it) 
-	{
+			it != shaderProgram->shaders.end(); ++it) {
 		glDetachShader(shader, *it);
 		glDeleteShader(*it);
 	}
+
 	glDeleteProgram(shader);
 	shaderProgramMap.erase(programIt);
+	
 	return 0;
 }
-uint32 OpenGLRenderDevice::getVersion()
-{
-	if(version != 0) {
+
+void OpenGLRenderDevice::setClipEnabled(bool enabled, uint32 plane) {
+	if (enabled) {
+		glEnable(GL_CLIP_DISTANCE0 + plane);
+	}
+	else {
+		glDisable(GL_CLIP_DISTANCE0 + plane);
+	}
+}
+
+uint32 OpenGLRenderDevice::getVersion() {
+	if (version != 0) {
 		return version;
 	}
 

@@ -214,6 +214,8 @@ class OpenGLRenderDevice {
 			uint32 texture, uint32 sampler, uint32 unit, enum TextureType textureType);
 		uint32 releaseShaderProgram(uint32 shader);
 
+		void setClipEnabled(bool enabled, uint32 plane = 0);
+
 		void clear(uint32 fbo,
 				bool shouldClearColor, bool shouldClearDepth, bool shouldClearStencil,
 				const Color& color, uint32 stencil);

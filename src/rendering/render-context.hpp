@@ -8,20 +8,33 @@ class RenderContext {
 	public:
 		inline RenderContext(RenderDevice& deviceIn, RenderTarget& targetIn)
 			: device(&deviceIn)
-			, target(&targetIn) {}
+			, target(&targetIn)
+			, clearColor(Color(0, 0, 0)) {}
+
+		inline RenderContext(RenderDevice& deviceIn, RenderTarget& targetIn,
+				const Color& clearColorIn)
+			: device(&deviceIn)
+			, target(&targetIn)
+			, clearColor(clearColorIn) {}
 
 		inline void clear(bool shouldClearColor, bool shouldClearDepth,
-				bool shouldClearStencil, const Color& color, uint32 stencil);
-		inline void clear(const Color& color, bool shouldClearDepth=false);
+				bool shouldClearStencil, uint32 stencil);
+		inline void clear(bool shouldClearDepth = false);
 		inline void draw(Shader& shader, VertexArray& vertexArray, 
-				const RenderDevice::DrawParams& drawParams, uint32 numInstances=1);
+				const RenderDevice::DrawParams& drawParams, uint32 numInstances = 1);
 		inline void draw(Shader& shader, VertexArray& vertexArray, 
 				const RenderDevice::DrawParams& drawParams, uint32 numInstances,
 				uint32 numIndices);
 
+		inline void setClearColor(const Color& color) { clearColor = color; }
+		inline const Color& getClearColor() const { return clearColor; }
+	protected:
+		inline RenderDevice& getDevice() { return *device; }
 	private:
 		RenderDevice* device;
 		RenderTarget* target;
+
+		Color clearColor;
 };
 
 inline void RenderContext::draw(Shader& shader, VertexArray& vertexArray, 
@@ -38,12 +51,12 @@ inline void RenderContext::draw(Shader& shader, VertexArray& vertexArray,
 }
 
 inline void RenderContext::clear(bool shouldClearColor, bool shouldClearDepth,
-		bool shouldClearStencil, const Color& color, uint32 stencil) {
+		bool shouldClearStencil, uint32 stencil) {
 	device->clear(target->getId(), shouldClearColor, shouldClearDepth, shouldClearStencil,
-			color, stencil);
+			clearColor, stencil);
 }
 
-inline void RenderContext::clear(const Color& color, bool shouldClearDepth) {
-	device->clear(target->getId(), true, shouldClearDepth, false, color, 0);
+inline void RenderContext::clear(bool shouldClearDepth) {
+	device->clear(target->getId(), true, shouldClearDepth, false, clearColor, 0);
 }
 

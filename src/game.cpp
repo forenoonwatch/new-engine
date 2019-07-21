@@ -9,7 +9,7 @@ int Game::loadScene(Scene* scene) {
 }
 
 void Game::startLoop() {
-	const Color color(0.0f, 0.15f, 0.3f);
+	//const Color color(0.0f, 0.15f, 0.3f);
 	const float frameTime = 1.0 / 60.0;
 
 	uint32 fps = 0;
@@ -46,13 +46,15 @@ void Game::startLoop() {
 			app->processMessages(frameTime, eventHandler);
 			interactionWorld->processInteractions(frameTime);
 			ecs.updateSystems(mainSystems, frameTime);
+			eventHandler.flush();
 
 			updateTimer -= frameTime;
 			shouldRender = true;
 		}
 		
 		if (shouldRender) {
-			renderContext->clear(color, true);
+			renderContext->clear(true);
+			//renderContext->clear(color, true);
 			ecs.updateSystems(renderPipeline, frameTime);
 			renderContext->flush();
 			
