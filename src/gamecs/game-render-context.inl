@@ -10,9 +10,3 @@ inline void GameRenderContext::renderSkinnedMesh(VertexArray& vertexArray,
 	skinnedMeshRenderBuffer[std::make_pair(&vertexArray, &material)].emplace_back(
 			camera.viewProjection * transform, transform, &rig);
 }
-
-inline void GameRenderContext::emitParticle(ParticleEmitter& emitter,
-		const Vector3f& position) {
-	particles.emplace_back(&emitter, position, emitter.initialVelocity,
-			emitter.timeToLive);
-}

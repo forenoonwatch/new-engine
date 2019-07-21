@@ -1,9 +1,24 @@
 #pragma once
 
 #include "util-components.hpp"
+#include "game-render-context.hpp"
+
+class ParticleEmitter;
+class GameRenderContext;
 
 class Particle {
 	public:
+		Particle(ParticleEmitter* emitter = nullptr,
+					const Vector3f& position = Vector3f(),
+					const Vector3f& velocity = Vector3f(),
+					float timeToLive = 0.f)
+			: emitter(emitter)
+			, position(position)
+			, velocity(velocity)
+			, timeToLive(timeToLive) {}
+
+		Particle(Particle&&) = default;
+
 		ParticleEmitter* emitter;
 		Vector3f position;
 		Vector3f velocity;
@@ -14,7 +29,7 @@ class ParticleEmitter : public ECSComponent<ParticleEmitter> {
 	public:
 		Vector3f initialVelocity;
 		Vector3f acceleration;
-		Texture texture;
+		Texture* texture;
 		float timeToLive;
 
 		float particlesPerSecond;
@@ -30,19 +45,7 @@ class ParticleSystem : public BaseECSSystem {
 			addComponentType(ParticleEmitter::ID);
 		}
 
-		virtual void updateComponents(float delta, BaseECSComponent** components) override {
-			TransformComponent* transform = (TransformComponent*)components[0];
-			ParticleEmitter* emitter = (ParticleEmitter*)components[1];
-
-			emitter->counter += delta;
-
-			float ppd = emitter->particlesPerSecond * delta;
-
-			while (emitter->counter >= ppd) {
-				emitter->counter -= ppd;
-				renderContext.emitParticle(*emitter);
-			}
-		}
+		virtual void updateComponents(float delta, BaseECSComponent** components);
 	private:
 		GameRenderContext& renderContext;
-}:
+};

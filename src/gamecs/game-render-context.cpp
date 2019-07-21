@@ -56,6 +56,12 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 	dataBuffer.update(data, FOG_OFFSET, 3 * sizeof(float));
 }
 
+void GameRenderContext::emitParticle(ParticleEmitter& emitter,
+		const Vector3f& position) {
+	particles.emplace_back(&emitter, position, emitter.initialVelocity,
+			emitter.timeToLive);
+}
+
 void GameRenderContext::renderText(Font& font, const String& text,
 		const Vector3f& color, float x, float y) {
 	Text& textData = textRenderBuffer[&font];

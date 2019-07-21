@@ -13,6 +13,9 @@
 #include "camera.hpp"
 #include "particles.hpp"
 
+class Particle;
+class ParticleEmitter;
+
 // TODO: replace Texture with Material DONE
 // TODO: add proper sorting and draw tag command whatever things
 // http://realtimecollisiondetection.net/blog/?p=86
