@@ -36,7 +36,11 @@ class GameRenderContext : public RenderContext {
 		void flush();
 
 		inline void setSkybox(CubeMap* skybox) { this->skybox = skybox; }
-		inline void setOcean(VertexArray* ocean) { this->ocean = ocean; }
+		inline void setOcean(VertexArray* ocean, Texture* oceanNormal, Texture* oceanDUDV) {
+			this->ocean = ocean;
+			this->oceanNormal = oceanNormal;
+			this->oceanDUDV = oceanDUDV;
+		}
 
 		inline Camera& getCamera() { return camera; }
 	private:
@@ -73,6 +77,7 @@ class GameRenderContext : public RenderContext {
 
 		Sampler mipmapSampler;
 		Sampler linearSampler;
+		Sampler repeatSampler;
 
 		Texture reflectionTexture;
 		RenderTarget reflectionTarget;
@@ -94,6 +99,8 @@ class GameRenderContext : public RenderContext {
 
 		CubeMap* skybox;
 		VertexArray* ocean;
+		Texture* oceanNormal;
+		Texture* oceanDUDV;
 
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> meshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;

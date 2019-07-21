@@ -126,7 +126,8 @@ int TestScene2::load(Game& game) {
 	Water water;
 	VertexArray oceanVA(game.getRenderDevice(), water, RenderDevice::USAGE_STATIC_DRAW);
 
-	game.getRenderContext().setOcean(&oceanVA);
+	game.getRenderContext().setOcean(&oceanVA, &game.getAssetManager().getTexture("WaterNormal"),
+			&game.getAssetManager().getTexture("WaterDUDV"));
 
 	RenderableMeshComponent renderableMesh;
 	renderableMesh.vertexArray = &game.getAssetManager().getVertexArray("Hull");

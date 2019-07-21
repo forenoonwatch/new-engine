@@ -28,6 +28,9 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, oceanShader(assetManager.getShader("ocean-shader"))
 			, mipmapSampler(device, RenderDevice::FILTER_NEAREST_MIPMAP_NEAREST)
 			, linearSampler(device, RenderDevice::FILTER_LINEAR)
+			, repeatSampler(device, RenderDevice::FILTER_LINEAR,
+					RenderDevice::FILTER_LINEAR, RenderDevice::WRAP_REPEAT,
+					RenderDevice::WRAP_REPEAT)
 			, reflectionTexture(device, RenderDevice::FORMAT_RGB, 400, 300)
 			, reflectionTarget(device, reflectionTexture)
 			, reflectionContext(device, reflectionTarget)
@@ -39,6 +42,9 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, textQuad(assetManager.getVertexArray("text-quad"))
 			, skyboxMesh(assetManager.getVertexArray("skybox-mesh"))
 			, skybox(nullptr)
+			, ocean(nullptr)
+			, oceanNormal(nullptr)
+			, oceanDUDV(nullptr)
 			, dataBuffer(device, DATA_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, animBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, fontBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
@@ -129,8 +135,10 @@ void GameRenderContext::flush() {
 
 		getDevice().setClipEnabled(false);
 
-		oceanShader.setSampler("reflection", reflectionTexture, linearSampler, 0);
-		oceanShader.setSampler("refraction", refractionTexture, linearSampler, 1);
+		oceanShader.setSampler("reflection", reflectionTexture, repeatSampler, 0);
+		oceanShader.setSampler("refraction", refractionTexture, repeatSampler, 1);
+		oceanShader.setSampler("normalMap", *oceanNormal, repeatSampler, 2);
+		//oceanShader.setSampler("dudvMap", *oceanDUDV, repeatSampler, 3);
 		draw(oceanShader, *ocean, drawParams, 1);
 	}
 
