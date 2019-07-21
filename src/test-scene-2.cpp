@@ -1,11 +1,21 @@
 #include "test-scene-2.hpp"
 
+#include "core/timing.hpp"
 #include "core/input.hpp"
 
 #include "gamecs/renderable-mesh.hpp"
 #include "gamecs/movement-control.hpp"
+#include "gamecs/orbit-camera.hpp"
 
 #include "terrain/water.hpp"
+
+#include "classic-noise.hpp"
+
+#define AMPLITUDE 3.f
+#define TIME_SCALE 0.2f
+#define SPACE_SCALE 0.1f
+#define SHIP_LENGTH 2.f
+#define SHIP_WIDTH 1.f
 
 void SpinSystem::updateComponents(float delta, BaseECSComponent** components) {
 	counter += 0.5f * delta;
@@ -19,23 +29,72 @@ void SpinSystem::updateComponents(float delta, BaseECSComponent** components) {
 	//transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 1.65f));
 }
 
+class FloatSystem : public BaseECSSystem {
+	public:
+		FloatSystem()
+				: BaseECSSystem() {
+			addComponentType(TransformComponent::ID);
+			addComponentType(RenderableMeshComponent::ID);
+		}
+
+		virtual void updateComponents(float delta, BaseECSComponent** components) override {
+			Transform& transform = ((TransformComponent*)components[0])->transform;
+			Matrix m = transform.toMatrix();
+
+			Vector3f fwd = transform.getTranslation() + (m[2] * Vector::load1f(SHIP_LENGTH));
+			Vector3f bak = transform.getTranslation() + (m[2] * Vector::load1f(-SHIP_LENGTH));
+			Vector3f rht = transform.getTranslation() + (m[0] * Vector::load1f(SHIP_WIDTH));
+			Vector3f lft = transform.getTranslation() + (m[0] * Vector::load1f(-SHIP_WIDTH));
+
+			fwd = Vector3f(fwd[0], height(fwd[0], fwd[2]), fwd[2]);
+			bak = Vector3f(bak[0], height(bak[0], bak[2]), bak[2]);
+			lft = Vector3f(lft[0], height(lft[0], lft[2]), lft[2]);
+			rht = Vector3f(rht[0], height(rht[0], rht[2]), rht[2]);
+
+			rht = (rht - lft).normalized();
+			fwd = (fwd - bak).normalized();
+
+			Vector3f up = fwd.cross(rht).normalized();
+			Vector3f pos = transform.getTranslation();
+
+			transform.setTranslation(Vector3f(pos[0], height(pos[0], pos[2]), pos[2])
+					+ Vector3f(0.f, 0.f, delta));
+			transform.setRotation(transform.getRotation().slerp(Quaternion::fromAxes(rht, up, fwd), 0.2));
+		}
+	private:
+		inline float height(float x, float y) const {
+			float t = TIME_SCALE * (float)Time::getTime();
+			x *= SPACE_SCALE;
+			y *= SPACE_SCALE;
+
+			return AMPLITUDE * cnoise(x + t, y + t)
+					* cnoise(-0.75 * x + 0.5 * t, -0.75 * y + 0.5 * t);
+		}
+};
+
 int TestScene2::load(Game& game) {
 	game.getAssetManager().load("./res/scenes/test.dat");
 	
+	game.getRenderContext().setSkybox(&game.getAssetManager().getCubeMap("Skybox"));
+
 	InputControl inputAxisX, inputAxisY, inputAxisZ;
 
-	game.getEventHandler().addKeyControl(Input::KEY_A, inputAxisX, -1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_D, inputAxisX, 1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_LEFT, inputAxisX, -1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_RIGHT, inputAxisX, 1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_A, inputAxisX, -1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_D, inputAxisX, 1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_LEFT, inputAxisX, -1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_RIGHT, inputAxisX, 1.f);
 
-	game.getEventHandler().addKeyControl(Input::KEY_S, inputAxisZ, -1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_W, inputAxisZ, 1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_DOWN, inputAxisZ, -1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_UP, inputAxisZ, 1.f);
+	game.getEventHandler().addMouseMoveControl(0, inputAxisX, 0.5f);
+	game.getEventHandler().addMouseMoveControl(1, inputAxisZ, 0.1f);
+	game.getEventHandler().addMouseWheelControl(inputAxisY, 1.f);
 
-	game.getEventHandler().addKeyControl(Input::KEY_Q, inputAxisY, 1.f);
-	game.getEventHandler().addKeyControl(Input::KEY_E, inputAxisY, -1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_S, inputAxisZ, -1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_W, inputAxisZ, 1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_DOWN, inputAxisZ, -1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_UP, inputAxisZ, 1.f);
+
+	//game.getEventHandler().addKeyControl(Input::KEY_Q, inputAxisY, 1.f);
+	//game.getEventHandler().addKeyControl(Input::KEY_E, inputAxisY, -1.f);
 
 	MovementControlComponent movementControl;
 	movementControl.movementControls.emplace_back(Vector3f(100, 0, 0), &inputAxisX);
@@ -43,39 +102,55 @@ int TestScene2::load(Game& game) {
 	movementControl.movementControls.emplace_back(Vector3f(0, 0, 100), &inputAxisZ);
 
 	Water water;
-	VertexArray va(game.getRenderDevice(), water, RenderDevice::USAGE_STATIC_DRAW);
+	VertexArray oceanVA(game.getRenderDevice(), water, RenderDevice::USAGE_STATIC_DRAW);
+
+	game.getRenderContext().setOcean(&oceanVA);
 
 	RenderableMeshComponent renderableMesh;
-	renderableMesh.vertexArray = &game.getAssetManager().getVertexArray("MonkeyHead");
-	renderableMesh.material = &game.getAssetManager().getMaterial("Water");
+	renderableMesh.vertexArray = &game.getAssetManager().getVertexArray("Hull");
+	renderableMesh.material = &game.getAssetManager().getMaterial("Wood");
 
 	TransformComponent transformComponent;
-	transformComponent.transform.setTranslation(Vector3f(0, 0, 0));
+	transformComponent.transform.setTranslation(Vector3f(0, 0, 10));
+	transformComponent.transform.setRotation(Quaternion(Vector3f(0.f, 1.f, 0.f), 2.27f));
 	//transformComponent.transform.setScale(Vector3f(30, 30, 30));
 	//transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 1.65f));
 
-	game.getECS().makeEntity(transformComponent, renderableMesh);
+	EntityHandle ship = game.getECS().makeEntity(transformComponent, renderableMesh);
 
 	CameraComponent cameraComponent(game.getRenderContext().getCamera());
-	transformComponent.transform.setTranslation(Vector3f(0.f, 20.f, 0.f));
-	transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 0.4f));
+	transformComponent.transform.setTranslation(Vector3f(0.f, 0.f, 0.f));
+	transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 0.3f));
 
 	MotionComponent motionComponent;
+	EntityPointerComponent epc;
+	epc.entityPtr = &ship;
 
-	game.getECS().makeEntity(transformComponent, cameraComponent, motionComponent, movementControl);
+	CameraControlComponent ccc;
+	ccc.movementControls.emplace_back(Vector3f(-0.05f, 0, 0), &inputAxisZ);
+	ccc.movementControls.emplace_back(Vector3f(0, 0.05f, 0), &inputAxisX);
+	ccc.movementControls.emplace_back(Vector3f(0, 0, -1), &inputAxisY);
+	ccc.offsets = Vector3f(0.f, 0.f, 4.f);
+
+	game.getECS().makeEntity(transformComponent, cameraComponent,
+			/*motionComponent,*/ movementControl, epc, ccc);
 
 	RenderableMeshSystem rmSystem(game.getRenderContext());
 	CameraSystem cameraSystem;
 	SpinSystem ss(game.getRenderContext());
 	MovementControlSystem mcSystem;
 	MotionSystem motionSystem;
+	FloatSystem fs;
+	OrbitCameraSystem cfs(game.getECS(), game.getEventHandler());
 
 	//game.getMainSystems().addSystem(ss);
-	game.getMainSystems().addSystem(mcSystem);
-	game.getMainSystems().addSystem(motionSystem);
+	game.getMainSystems().addSystem(fs);
+	//game.getMainSystems().addSystem(mcSystem);
+	//game.getMainSystems().addSystem(motionSystem);
+	game.getMainSystems().addSystem(cfs);
 
-	game.getRenderPipeline().addSystem(rmSystem);
 	game.getRenderPipeline().addSystem(cameraSystem);
+	game.getRenderPipeline().addSystem(rmSystem);
 
 	game.startLoop();
 }

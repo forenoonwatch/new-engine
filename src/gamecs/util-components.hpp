@@ -7,3 +7,8 @@ class TransformComponent : public ECSComponent<TransformComponent> {
 	public:
 		Transform transform;
 };
+
+class EntityPointerComponent : public ECSComponent<EntityPointerComponent> {
+	public:
+		EntityHandle* entityPtr;
+};

@@ -1,9 +1,6 @@
 #pragma once
 
-#include "ecs/ecs.hpp"
-//#include "math/transform.hpp"
 #include "input/input-control.hpp"
-
 #include "motion.hpp"
 
 class MovementControl {
@@ -35,7 +32,7 @@ class MovementControlSystem : public BaseECSSystem {
 			MovementControlComponent* movementControl = (MovementControlComponent*)components[0];
 			MotionComponent* motionComponent = (MotionComponent*)components[1];
 
-			for (int i = 0; i < movementControl->movementControls.size(); ++i) {
+			for (int32 i = 0; i < movementControl->movementControls.size(); ++i) {
 				MovementControl& mvmtCtrl = movementControl->movementControls[i];
 				motionComponent->acceleration += mvmtCtrl.movement * (mvmtCtrl.inputControl->getAmt() - mvmtCtrl.lastInputAmt);
 				mvmtCtrl.lastInputAmt = mvmtCtrl.inputControl->getAmt();
@@ -47,7 +44,7 @@ class MovementControlSystem : public BaseECSSystem {
 
 			motionComponent->velocity *= 0.95; // cheap hack
 
-			for (int i = 0; i < movementControl->turnControls.size(); ++i) {
+			for (int32 i = 0; i < movementControl->turnControls.size(); ++i) {
 				MovementControl& mvmtCtrl = movementControl->turnControls[i];
 				motionComponent->rotVelocity = mvmtCtrl.movement * (mvmtCtrl.inputControl->getAmt() * delta);
 			}

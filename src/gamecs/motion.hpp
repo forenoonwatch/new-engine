@@ -1,8 +1,6 @@
 #pragma once
 
-#include "ecs/ecs.hpp"
 #include "physics/motion-integrators.hpp"
-
 #include "util-components.hpp"
 
 class MotionComponent : public ECSComponent<MotionComponent> {
