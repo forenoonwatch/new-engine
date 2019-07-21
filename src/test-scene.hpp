@@ -47,7 +47,7 @@ class TestInteraction : public Interaction {
 		Array<Manifold> manifolds;
 };
 
-class SpinSystem : public BaseECSSystem {
+/*class SpinSystem : public BaseECSSystem {
 	public:
 		SpinSystem()
 				: BaseECSSystem()
@@ -65,9 +65,9 @@ class SpinSystem : public BaseECSSystem {
 		}
 	private:
 		float counter;
-};
+};*/
 
-class FPSUpdateSystem : public BaseECSSystem {
+/*class FPSUpdateSystem : public BaseECSSystem {
 	public:
 		FPSUpdateSystem(Game& game)
 				: BaseECSSystem()
@@ -82,7 +82,7 @@ class FPSUpdateSystem : public BaseECSSystem {
 		}
 	private:
 		Game& game;
-};
+};*/
 
 class FollowCameraSystem : public BaseECSSystem {
 	public:
@@ -133,12 +133,12 @@ class TestScene : public Scene {
 			game.getEventHandler().addKeyControl(Input::KEY_E, inputAxisY, -1.f);
 
 			// Create components
-			AABBColliderComponent colliderComponent;
-			colliderComponent.aabb = vertexArrayAABB;
+			//AABBColliderComponent colliderComponent;
+			//colliderComponent.aabb = vertexArrayAABB;
 
-			TerrainColliderComponent terrainColliderComponent;
-			terrainColliderComponent.halfHeight = vertexArrayAABB.getExtents()[2];
-			terrainColliderComponent.radius = vertexArrayAABB.getExtents()[1];
+			//TerrainColliderComponent terrainColliderComponent;
+			//terrainColliderComponent.halfHeight = vertexArrayAABB.getExtents()[2];
+			//terrainColliderComponent.radius = vertexArrayAABB.getExtents()[1];
 
 			TransformComponent transformComponent;
 			transformComponent.transform.setTranslation(Vector3f(0, 0, 20));
@@ -179,33 +179,33 @@ class TestScene : public Scene {
 			game.getECS().makeEntity(transformComponent, cameraComponent);
 
 			// terrain
-			RenderableMeshComponent terrainMesh;
-			terrainMesh.vertexArray = &game.getAssetManager().getVertexArray("Terrain");
-			terrainMesh.material = &game.getAssetManager().getMaterial("Grass");
+			//RenderableMeshComponent terrainMesh;
+			//terrainMesh.vertexArray = &game.getAssetManager().getVertexArray("Terrain");
+			//terrainMesh.material = &game.getAssetManager().getMaterial("Grass");
 
-			transformComponent.transform.setTranslation(Vector3f(0.f, -15.f, 0.f));
-			transformComponent.transform.setRotation(Quaternion(Vector3f(-1.f, 0.f, 0.f), 0.5f * 3.141592f));
-			transformComponent.transform.setScale(Vector3f(50.f, 50.f, 50.f));
+			//transformComponent.transform.setTranslation(Vector3f(0.f, -15.f, 0.f));
+			//transformComponent.transform.setRotation(Quaternion(Vector3f(-1.f, 0.f, 0.f), 0.5f * 3.141592f));
+			//transformComponent.transform.setScale(Vector3f(50.f, 50.f, 50.f));
 
-			Transform terrainTransform = transformComponent.transform;
+			//Transform terrainTransform = transformComponent.transform;
 
 			//game.getECS().makeEntity(transformComponent, terrainMesh);
 			
 			//Water water;
 
-			RenderableMeshComponent waterMesh;
+			//RenderableMeshComponent waterMesh;
 
-			transformComponent.transform.setScale(Vector3f(1.f, 1.f, 1.f));
+			//transformComponent.transform.setScale(Vector3f(1.f, 1.f, 1.f));
 
-			transformComponent.transform.setRotation(Quaternion(Vector3f(0.f, 1.f, 0.f), -1.f * 3.141592f));
-			transformComponent.transform.setTranslation(Vector3f(Math::randf() * 10.f - 5.f,
-						Math::randf() * 10.f - 5.f, 20.f));
+			//transformComponent.transform.setRotation(Quaternion(Vector3f(0.f, 1.f, 0.f), -1.f * 3.141592f));
+			//transformComponent.transform.setTranslation(Vector3f(Math::randf() * 10.f - 5.f,
+			//			Math::randf() * 10.f - 5.f, 20.f));
 
 			game.getECS().makeEntity(transformComponent, skinnedMesh, animatorComponent);
 
 			// Cube 1
 			//motionComponent.velocity = Vector3f(0, 0, 0.1f);
-			motionComponent.acceleration = Vector3f(0.f, -9.81f, 0.f);
+			//motionComponent.acceleration = Vector3f(0.f, -9.81f, 0.f);
 			//transformComponent.transform.setTranslation(Vector3f(-3.f, -9.5f, 15.f));
 			//transformComponent.transform.setTranslation(Vector3f(0.f, 0.f, 20.f));
 			//transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 0.5f * MATH_PI));
@@ -215,10 +215,10 @@ class TestScene : public Scene {
 			//game.getECS().makeEntity(transformComponent, renderableMesh);
 
 			// Movable object
-			transformComponent.transform.setTranslation(Vector3f(-7.f, 15.f, 15.f));
+			//transformComponent.transform.setTranslation(Vector3f(-7.f, 15.f, 15.f));
 			//game.getECS().makeEntity(transformComponent, renderableMesh, motionComponent, movementControl, colliderComponent);
-			EntityHandle movableObject = game.getECS().makeEntity(transformComponent, renderableMesh,
-					motionComponent, movementControl, terrainColliderComponent, colliderComponent);
+			//EntityHandle movableObject = game.getECS().makeEntity(transformComponent, renderableMesh,
+			//		motionComponent, movementControl, terrainColliderComponent, colliderComponent);
 
 			// FPS renderer
 			game.getECS().makeEntity(renderableText);
@@ -227,11 +227,11 @@ class TestScene : public Scene {
 			MovementControlSystem mcSystem;
 			MotionSystem motionSystem;
 			AnimatorSystem animatorSystem;
-			SpinSystem spinSystem;
+			//SpinSystem spinSystem;
 			FPSUpdateSystem fpsSystem(game);
 			
-			TerrainCollisionSystem ptcSystem(game.getAssetManager().getModel("Terrain"), terrainTransform);
-			FollowCameraSystem cfSystem(game.getECS(), movableObject);
+			//TerrainCollisionSystem ptcSystem(game.getAssetManager().getModel("Terrain"), terrainTransform);
+			//FollowCameraSystem cfSystem(game.getECS(), movableObject);
 
 			CameraSystem cameraSystem;
 			RenderableMeshSystem rmSystem(game.getRenderContext());
@@ -243,9 +243,9 @@ class TestScene : public Scene {
 			game.getMainSystems().addSystem(animatorSystem);
 			//mainSystems.addSystem(spinSystem);
 			game.getMainSystems().addSystem(fpsSystem);
-			game.getMainSystems().addSystem(ptcSystem);
+			//game.getMainSystems().addSystem(ptcSystem);
 
-			game.getRenderPipeline().addSystem(cfSystem);
+			//game.getRenderPipeline().addSystem(cfSystem);
 			game.getRenderPipeline().addSystem(cameraSystem);
 			game.getRenderPipeline().addSystem(rmSystem);
 			game.getRenderPipeline().addSystem(smSystem);

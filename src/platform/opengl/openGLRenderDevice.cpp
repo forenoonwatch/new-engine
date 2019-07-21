@@ -435,8 +435,7 @@ uint32 OpenGLRenderDevice::releaseGeometryBuffer(uint32 fbo) {
 uint32 OpenGLRenderDevice::createVertexArray(const float** vertexData,
 		const uint32* vertexElementSizes, uint32 numVertexComponents,
 		uint32 numInstanceComponents, uint32 numVertices, const uint32* indices,
-		uint32 numIndices, enum BufferUsage usage)
-{
+		uint32 numIndices, enum BufferUsage usage) {
 	unsigned int numBuffers = numVertexComponents + numInstanceComponents + 1;
 
 	GLuint VAO;
@@ -540,22 +539,27 @@ void OpenGLRenderDevice::updateVertexArrayBuffer(uint32 vao, uint32 bufferIndex,
 	}	
 }
 
-uint32 OpenGLRenderDevice::releaseVertexArray(uint32 vao)
-{
-	if(vao == 0) {
+uint32 OpenGLRenderDevice::releaseVertexArray(uint32 vao) {
+	if (vao == 0) {
 		return 0;
 	}
+
 	HashMap<uint32, VertexArray>::iterator it = vaoMap.find(vao);
-	if(it == vaoMap.end()) {
+
+	if (it == vaoMap.end()) {
 		return 0;
 	}
+
 	const struct VertexArray* vaoData = &it->second;
 	
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(vaoData->numBuffers, vaoData->buffers);
+	
 	delete[] vaoData->buffers;
 	delete[] vaoData->bufferSizes;
+	
 	vaoMap.erase(it);
+	
 	return 0;
 }
 
@@ -573,31 +577,38 @@ uint32 OpenGLRenderDevice::createSampler(enum SamplerFilter minFilter, enum Samp
 	if (anisotropy != 0.0f && minFilter != FILTER_NEAREST && minFilter != FILTER_LINEAR) {
 		glSamplerParameterf(result, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
+
 	return result;
 }
 
-uint32 OpenGLRenderDevice::releaseSampler(uint32 sampler)
-{
-	if(sampler == 0) {
+uint32 OpenGLRenderDevice::releaseSampler(uint32 sampler) {
+	if (sampler == 0) {
 		return 0;
 	}
+
 	glDeleteSamplers(1, &sampler);
+
 	return 0;
 }
 
-static GLint getOpenGLFormat(enum OpenGLRenderDevice::PixelFormat format)
-{
+static GLint getOpenGLFormat(enum OpenGLRenderDevice::PixelFormat format) {
 	switch(format) {
-	case OpenGLRenderDevice::FORMAT_R: return GL_RED;
-	case OpenGLRenderDevice::FORMAT_RG: return GL_RG;
-	case OpenGLRenderDevice::FORMAT_RGB: return GL_RGB;
-	case OpenGLRenderDevice::FORMAT_RGBA: return GL_RGBA;
-	case OpenGLRenderDevice::FORMAT_DEPTH: return GL_DEPTH_COMPONENT;
-	case OpenGLRenderDevice::FORMAT_DEPTH_AND_STENCIL: return GL_DEPTH_STENCIL;
-	default:
-		DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "PixelFormat %d is not a valid PixelFormat.",
-				format);
-		return 0;
+		case OpenGLRenderDevice::FORMAT_R:
+			return GL_RED;
+		case OpenGLRenderDevice::FORMAT_RG:
+			return GL_RG;
+		case OpenGLRenderDevice::FORMAT_RGB:
+			return GL_RGB;
+		case OpenGLRenderDevice::FORMAT_RGBA:
+			return GL_RGBA;
+		case OpenGLRenderDevice::FORMAT_DEPTH:
+			return GL_DEPTH_COMPONENT;
+		case OpenGLRenderDevice::FORMAT_DEPTH_AND_STENCIL:
+			return GL_DEPTH_STENCIL;
+		default:
+			DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "PixelFormat %d is not a valid PixelFormat.",
+					format);
+			return 0;
 	};
 }
 
@@ -834,11 +845,16 @@ uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText) {
 }
 
 void OpenGLRenderDevice::setShaderUniformBuffer(uint32 shader, const String& uniformBufferName,
-			uint32 buffer) {
+			uint32 buffer, uint32 index) {
 	setShader(shader);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 
-			shaderProgramMap[shader].uniformMap[uniformBufferName],
-			buffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer);
+}
+
+void OpenGLRenderDevice::setShaderUniformBlockBinding(uint32 shader, const String& uniformBufferName,
+		uint32 block) {
+	setShader(shader);
+	glUniformBlockBinding(shader,
+			shaderProgramMap[shader].uniformMap[uniformBufferName], block);
 }
 
 void OpenGLRenderDevice::setShaderSampler(uint32 shader, const String& samplerName,
@@ -850,7 +866,6 @@ void OpenGLRenderDevice::setShaderSampler(uint32 shader, const String& samplerNa
 	glBindSampler(unit, sampler);
 	glUniform1i(shaderProgramMap[shader].samplerMap[samplerName], unit);
 }
-
 
 uint32 OpenGLRenderDevice::releaseShaderProgram(uint32 shader) {
 	if (shader == 0) {
@@ -911,20 +926,20 @@ String OpenGLRenderDevice::getShaderVersion() {
 	if (version >= 330) {
 		shaderVersion = StringUtil::toString(version);
 	}
-	else if(version >= 320) {
+	else if (version >= 320) {
 		//shaderVersion = "150";
 		shaderVersion = "330";
 	}
-	else if(version >= 310) {
+	else if (version >= 310) {
 		shaderVersion = "140";
 	}
-	else if(version >= 300) {
+	else if (version >= 300) {
 		shaderVersion = "130";
 	}
-	else if(version >= 210) {
+	else if (version >= 210) {
 		shaderVersion = "120";
 	}
-	else if(version >= 200) {
+	else if (version >= 200) {
 		shaderVersion = "110";
 	}
 	else {
@@ -975,33 +990,34 @@ static bool addShader(GLuint shaderProgram, const String& text, GLenum type,
 }
 
 static bool checkShaderError(GLuint shader, int flag,
-		bool isProgram, const String& errorMessage)
-{
+		bool isProgram, const String& errorMessage) {
 	GLint success = 0;
     GLchar error[1024] = { 0 };
 
-	if(isProgram) {
+	if (isProgram) {
 		glGetProgramiv(shader, flag, &success);
-	} else {
+	}
+	else {
 		glGetShaderiv(shader, flag, &success);
 	}
 
-	if(!success) {
-		if(isProgram) {
+	if (!success) {
+		if (isProgram) {
 			glGetProgramInfoLog(shader, sizeof(error), NULL, error);
-		} else {
+		}
+		else {
 			glGetShaderInfoLog(shader, sizeof(error), NULL, error);
 		}
 
 		DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "%s: '%s'\n", errorMessage.c_str(), error);
 		return true;
 	}
+
 	return false;
 }
 
-static void addAllAttributes(GLuint program, const String& vertexShaderText, uint32 version)
-{
-	if(version >= 320) {
+static void addAllAttributes(GLuint program, const String& vertexShaderText, uint32 version) {
+	if (version >= 320) {
 		// Layout is enabled. Return.
 		return;
 	}
@@ -1028,10 +1044,10 @@ static void addAllAttributes(GLuint program, const String& vertexShaderText, uin
 }
 
 static void addShaderUniforms(GLuint shaderProgram, const String& shaderText,
-		HashMap<String, GLint>& uniformMap, HashMap<String, GLint>& samplerMap)
-{
+		HashMap<String, GLint>& uniformMap, HashMap<String, GLint>& samplerMap) {
 	GLint numBlocks;
 	glGetProgramiv(shaderProgram, GL_ACTIVE_UNIFORM_BLOCKS, &numBlocks);
+
 	for (int32 block = 0; block < numBlocks; ++block) {
 		GLint nameLen;
 		glGetActiveUniformBlockiv(shaderProgram, block,

@@ -10,9 +10,10 @@ class Shader {
 	public:
 		inline Shader(RenderDevice& deviceIn, const String& text)
 			: device(&deviceIn)
-			, deviceId(device->createShaderProgram(text)) {}
+			, deviceID(device->createShaderProgram(text)) {}
 
-		inline void setUniformBuffer(const String& name, UniformBuffer& buffer);
+		inline void setBufferBlock(const String& name, uint32 block);
+		inline void setUniformBuffer(const String& name, UniformBuffer& buffer, uint32 index);
 
 		inline void setSampler(const String& name, Texture& texture, Sampler& sampler,
 				uint32 unit, enum RenderDevice::TextureType textureType = RenderDevice::TEXTURE_TYPE_2D);
@@ -26,41 +27,45 @@ class Shader {
 		inline uint32 getId();
 
 		inline virtual ~Shader() {
-			deviceId = device->releaseShaderProgram(deviceId);
+			deviceID = device->releaseShaderProgram(deviceID);
 		}
 	private:
 		RenderDevice* device;
-		uint32 deviceId;
+		uint32 deviceID;
 
 		NULL_COPY_AND_ASSIGN(Shader);
 };
 
 inline uint32 Shader::getId() {
-	return deviceId;
+	return deviceID;
 }
 
-inline void Shader::setUniformBuffer(const String& name, UniformBuffer& buffer) {
-	device->setShaderUniformBuffer(deviceId, name, buffer.getId());
+inline void Shader::setBufferBlock(const String& name, uint32 block) {
+	device->setShaderUniformBlockBinding(deviceID, name, block);
+}
+
+inline void Shader::setUniformBuffer(const String& name, UniformBuffer& buffer, uint32 index) {
+	device->setShaderUniformBuffer(deviceID, name, buffer.getId(), index);
 }
 
 inline void Shader::setSampler(const String& name, Texture& texture,
 		Sampler& sampler, uint32 unit, enum RenderDevice::TextureType textureType) {
-	device->setShaderSampler(deviceId, name, texture.getId(), sampler.getId(), unit, textureType);
+	device->setShaderSampler(deviceID, name, texture.getId(), sampler.getId(), unit, textureType);
 }
 
 inline void Shader::setSampler(const String& name, uint32 texture,
 		Sampler& sampler, uint32 unit, enum RenderDevice::TextureType textureType) {
-	device->setShaderSampler(deviceId, name, texture, sampler.getId(), unit, textureType);
+	device->setShaderSampler(deviceID, name, texture, sampler.getId(), unit, textureType);
 }
 
 inline void Shader::setSampler(const String& name, uint32 texture, uint32 sampler,
 		uint32 unit, enum RenderDevice::TextureType textureType) {
-	device->setShaderSampler(deviceId, name, texture, sampler, unit, textureType);
+	device->setShaderSampler(deviceID, name, texture, sampler, unit, textureType);
 }
 
 inline void Shader::setMaterial(Material& material, Sampler& sampler) {
-	device->setShaderSampler(deviceId, "diffuse", material.getDiffuse().getId(),
+	device->setShaderSampler(deviceID, "diffuse", material.getDiffuse().getId(),
 			sampler.getId(), 0, RenderDevice::TEXTURE_TYPE_2D);
-	device->setShaderSampler(deviceId, "normalMap", material.getNormal().getId(),
+	device->setShaderSampler(deviceID, "normalMap", material.getNormal().getId(),
 			sampler.getId(), 1, RenderDevice::TEXTURE_TYPE_2D);
 }

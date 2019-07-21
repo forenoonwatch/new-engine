@@ -18,7 +18,7 @@ void main() {
 #define UPPER_LIMIT 0.5
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
+	//mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;

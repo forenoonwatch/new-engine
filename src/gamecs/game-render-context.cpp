@@ -2,11 +2,13 @@
 
 #include "core/timing.hpp"
 
-static constexpr size_t DATA_BUFFER_SIZE = sizeof(Matrix) * Rig::MAX_JOINTS 
-		+ sizeof(float) + 3 * (3 * sizeof(float)) + sizeof(float) + 3 * sizeof(float);
-static constexpr size_t CAMERA_POS_OFFSET = sizeof(Matrix) * Rig::MAX_JOINTS
-		+ 2 * sizeof(Vector3f);
-static constexpr size_t TIME_OFFSET = sizeof(Matrix) * Rig::MAX_JOINTS + 11 * sizeof(float);
+static constexpr size_t DATA_BUFFER_SIZE = /*sizeof(Matrix) * Rig::MAX_JOINTS 
+		+ */sizeof(float) + 3 * (3 * sizeof(float)) + sizeof(float) + 3 * sizeof(float);
+static constexpr size_t ANIM_BUFFER_SIZE = sizeof(Matrix) * Rig::MAX_JOINTS;
+static constexpr size_t FONT_BUFFER_SIZE = sizeof(Matrix) + 3 * sizeof(float);
+
+static constexpr size_t CAMERA_POS_OFFSET = 8 * sizeof(float);
+static constexpr size_t TIME_OFFSET = 11 * sizeof(float);
 static constexpr size_t FOG_OFFSET = TIME_OFFSET + sizeof(float);
 
 static void color(uint32 rgb, float* out) {
@@ -37,18 +39,25 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, textQuad(assetManager.getVertexArray("text-quad"))
 			, skyboxMesh(assetManager.getVertexArray("skybox-mesh"))
 			, skybox(nullptr)
-			, dataBuffer(device, DATA_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
-	staticMeshShader.setUniformBuffer("ShaderData", dataBuffer);
-	skinnedMeshShader.setUniformBuffer("ShaderData", dataBuffer);
-	fontShader.setUniformBuffer("ShaderData", dataBuffer);
-	skyboxShader.setUniformBuffer("ShaderData", dataBuffer);
+			, dataBuffer(device, DATA_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
+			, animBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
+			, fontBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
+	//staticMeshShader.setBufferBlock("ShaderData", 0);
+	staticMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
+	skinnedMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
+	skyboxShader.setUniformBuffer("ShaderData", dataBuffer, 0);
+
+	skinnedMeshShader.setBufferBlock("AnimationData", 1);
+	skinnedMeshShader.setUniformBuffer("AnimationData", animBuffer, 1);
+
+	fontShader.setBufferBlock("ShaderData", 1);
+	fontShader.setUniformBuffer("ShaderData", fontBuffer, 1);
 
 	float data[] = {0.f, 50.f, -100.f, 0.4f, 1.f, 1.f, 1.f};
 	//color(0xFAF7D9, &data[4]);
 	color(0xFFFFFF, &data[4]);
 	
-	dataBuffer.update(data, sizeof(Matrix) * Rig::MAX_JOINTS,
-			sizeof(data));
+	dataBuffer.update(data, 0, sizeof(data));
 
 	data[0] = 0.5f;
 	data[1] = 0.5f;
@@ -139,7 +148,7 @@ void GameRenderContext::flush() {
 	}
 
 	// draw text
-	dataBuffer.update(&screenProjection, sizeof(Matrix));
+	fontBuffer.update(&screenProjection, sizeof(Matrix));
 
 	drawParams.sourceBlend = RenderDevice::BLEND_FUNC_ONE;
 	drawParams.destBlend = RenderDevice::BLEND_FUNC_ONE;
@@ -201,8 +210,9 @@ inline void GameRenderContext::flushSkinnedMeshes() {
 			skinnedMeshShader.setMaterial(*material, mipmapSampler);
 		}
 
-		for (auto matRig = std::begin(it->second), mrEnd = std::end(it->second); matRig != mrEnd; ++matRig) {
-			dataBuffer.update(matRig->rig->getTransformSet(), sizeof(Matrix) * Rig::MAX_JOINTS);
+		for (auto matRig = std::begin(it->second), mrEnd = std::end(it->second);
+				matRig != mrEnd; ++matRig) {
+			animBuffer.update(matRig->rig->getTransformSet(), sizeof(Matrix) * Rig::MAX_JOINTS);
 			vertexArray->updateBuffer(6, matRig->transforms, 2 * sizeof(Matrix));
 			draw(skinnedMeshShader, *vertexArray, drawParams, numTransforms);
 		}
@@ -224,7 +234,7 @@ inline void GameRenderContext::flushText() {
 			continue;
 		}
 		
-		dataBuffer.update(&it->second.color, sizeof(Matrix), 3 * sizeof(float));
+		fontBuffer.update(&it->second.color, sizeof(Matrix), 3 * sizeof(float));
 
 		font = it->first;
 

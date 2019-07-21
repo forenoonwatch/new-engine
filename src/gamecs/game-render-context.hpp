@@ -89,6 +89,8 @@ class GameRenderContext : public RenderContext {
 		VertexArray& skyboxMesh;
 
 		UniformBuffer dataBuffer;
+		UniformBuffer animBuffer;
+		UniformBuffer fontBuffer;
 
 		CubeMap* skybox;
 		VertexArray* ocean;

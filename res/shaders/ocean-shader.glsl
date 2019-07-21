@@ -23,7 +23,7 @@ Layout(2) attribute vec2 texCoord;
 Layout(3) attribute mat4 transforms[2];
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
+	//mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;
@@ -69,7 +69,7 @@ uniform sampler2D reflection;
 uniform sampler2D refraction;
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
+	//mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;

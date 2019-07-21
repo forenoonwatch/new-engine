@@ -209,7 +209,8 @@ class OpenGLRenderDevice {
 
 		uint32 createShaderProgram(const String& shaderText);
 		void setShaderUniformBuffer(uint32 shader, const String& uniformBufferName,
-				uint32 buffer);
+				uint32 buffer, uint32 index);
+		void setShaderUniformBlockBinding(uint32 shader, const String& uniformBufferName, uint32 block);
 		void setShaderSampler(uint32 shader, const String& samplerName,
 			uint32 texture, uint32 sampler, uint32 unit, enum TextureType textureType);
 		uint32 releaseShaderProgram(uint32 shader);

@@ -2,7 +2,7 @@
 
 #include "core/timing.hpp"
 
-#define UNLOCK_FPS false
+#define UNLOCK_FPS true
 
 int Game::loadScene(Scene* scene) {
 	return scene->load(*this);

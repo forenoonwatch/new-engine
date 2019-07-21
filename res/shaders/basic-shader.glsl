@@ -19,7 +19,6 @@ Layout(3) attribute vec3 tangent;
 Layout(4) attribute mat4 transforms[2];
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;
@@ -51,7 +50,6 @@ uniform sampler2D diffuse;
 uniform sampler2D normalMap;
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;

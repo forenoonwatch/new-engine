@@ -7,6 +7,11 @@
 #include "gamecs/movement-control.hpp"
 #include "gamecs/orbit-camera.hpp"
 
+//#include "animation/animator.hpp"
+//#include "gamecs/skinned-mesh.hpp"
+
+#include "gamecs/text-renderer.hpp"
+
 #include "terrain/water.hpp"
 
 #include "classic-noise.hpp"
@@ -28,6 +33,23 @@ void SpinSystem::updateComponents(float delta, BaseECSComponent** components) {
 	//transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), counter));
 	//transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 1.65f));
 }
+
+class FPSUpdateSystem : public BaseECSSystem {
+	public:
+		FPSUpdateSystem(Game& game)
+				: BaseECSSystem()
+				, game(game) {
+			addComponentType(RenderableText::ID);
+		}
+
+		virtual void updateComponents(float delta, BaseECSComponent** components) override {
+			RenderableText* renderableText = (RenderableText*)components[0];
+
+			renderableText->text = "FPS: " + StringUtil::toString(game.getFPS());
+		}
+	private:
+		Game& game;
+};
 
 class FloatSystem : public BaseECSSystem {
 	public:
@@ -135,22 +157,54 @@ int TestScene2::load(Game& game) {
 	game.getECS().makeEntity(transformComponent, cameraComponent,
 			/*motionComponent,*/ movementControl, epc, ccc);
 
-	RenderableMeshSystem rmSystem(game.getRenderContext());
+	/*SkinnedMeshComponent skinnedMesh;
+	skinnedMesh.vertexArray = &game.getAssetManager().getVertexArray("Cowboy");
+	skinnedMesh.material = &game.getAssetManager().getMaterial("Bricks");
+	skinnedMesh.rig = &game.getAssetManager().getRig("CowboyRig");
+	
+	Animator animatorComponent;
+	animatorComponent.currentAnim = &game.getAssetManager().getAnimation("Run");
+	
+	transformComponent.transform.setTranslation(Vector3f());
+	transformComponent.transform.setRotation(Quaternion(0, 0, 0, 1));
+
+	game.getECS().makeEntity(transformComponent, skinnedMesh, animatorComponent);*/
+
+	RenderableText renderableText;
+	renderableText.font = &game.getAssetManager().getFont("LucidaTypewriterRegular24");
+	renderableText.text = "FPS: --";
+	renderableText.color = Vector3f(1.f, 1.f, 1.f);
+	renderableText.x = 30.f;
+	renderableText.y = 550.f;
+
+	game.getECS().makeEntity(renderableText);
+
 	CameraSystem cameraSystem;
 	SpinSystem ss(game.getRenderContext());
 	MovementControlSystem mcSystem;
 	MotionSystem motionSystem;
 	FloatSystem fs;
 	OrbitCameraSystem cfs(game.getECS(), game.getEventHandler());
+	//AnimatorSystem animatorSystem;
+	FPSUpdateSystem fpsSystem(game);
+
+	RenderableMeshSystem rmSystem(game.getRenderContext());
+	//SkinnedMeshSystem smSystem(game.getRenderContext());
+	TextRenderingSystem frSystem(game.getRenderContext());
 
 	//game.getMainSystems().addSystem(ss);
 	game.getMainSystems().addSystem(fs);
 	//game.getMainSystems().addSystem(mcSystem);
 	//game.getMainSystems().addSystem(motionSystem);
 	game.getMainSystems().addSystem(cfs);
+	game.getMainSystems().addSystem(fpsSystem);
+	//game.getMainSystems().addSystem(animatorSystem);
 
 	game.getRenderPipeline().addSystem(cameraSystem);
 	game.getRenderPipeline().addSystem(rmSystem);
+	//game.getRenderPipeline().addSystem(smSystem);
+	game.getRenderPipeline().addSystem(frSystem);
 
 	game.startLoop();
+	return 0;
 }

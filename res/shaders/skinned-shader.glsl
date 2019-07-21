@@ -15,11 +15,14 @@ Layout(5) attribute vec3 jointWeights;
 Layout(6) attribute mat4 transforms[2];
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;
 	vec3 cameraPosition;
+};
+
+layout (std140) uniform AnimationData {
+	mat4 jointTransforms[MAX_JOINTS];
 };
 
 void main() {
@@ -44,7 +47,6 @@ uniform sampler2D diffuse;
 uniform sampler2D normalMap;
 
 layout (std140) uniform ShaderData {
-	mat4 jointTransforms[MAX_JOINTS];
 	vec3 lightPosition;
 	float ambientLight;
 	vec3 lightColor;
