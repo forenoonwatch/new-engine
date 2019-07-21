@@ -2,12 +2,39 @@
 
 #include "classic-noise.hpp"
 
+#define SIDE_LENGTH_VERTICES 100
+
 Water::Water() {
 	allocateElement(2); // positions
 	allocateElement(4); // adjacent local-space positions
+	allocateElement(2); // tex coords
 
-	createOcean(9);
+	setInstancedElementStartIndex(3);
+	allocateElement(2 * 16); // MVP matrix, normal transform
+
+	//createOcean(9);
+	createSimpleGrid();
 	//calcTangents();
+}
+
+void Water::createSimpleGrid() {
+	for (float y = 0.f; y < SIDE_LENGTH_VERTICES; ++y) {
+		for (float x = 0.f; x < SIDE_LENGTH_VERTICES; ++x) {
+			addVertex(x / SIDE_LENGTH_VERTICES, y / SIDE_LENGTH_VERTICES);
+		}
+	}
+
+	for (int32 y = 1; y < SIDE_LENGTH_VERTICES; ++y) {
+		for (int32 x = 1; x < SIDE_LENGTH_VERTICES; ++x) {
+			int32 i0 = y * SIDE_LENGTH_VERTICES + x;
+			int32 i1 = y * SIDE_LENGTH_VERTICES - SIDE_LENGTH_VERTICES + x;
+			int32 i2 = y * SIDE_LENGTH_VERTICES + x - 1;
+			int32 i3 = y * SIDE_LENGTH_VERTICES - SIDE_LENGTH_VERTICES + x - 1;
+
+			addIndices(i2, i1, i0);
+			addIndices(i2, i3, i1);
+		}
+	}
 }
 
 void Water::createOcean(int32 verticesPerEdge) {
@@ -272,8 +299,10 @@ void Water::addOffsetIndices(int32 innerBase, int32 outerBase, int32 innerRing,
 }
 
 inline void Water::addVertex(float x, float y) {
-	addElement2f(0, (x + 0.5f) / 2.f, (y + 0.5f) / 2.f);
+	//addElement2f(0, (x + 0.5f) / 2.f, (y + 0.5f) / 2.f);
+	addElement2f(0, 300 * (x + 0.5f) / 2.f - 150.f, 300 * (y + 0.5f) / 2.f - 150.f);
 	addElement4f(1, 0.f, 0.f, 0.f, 0.f);
+	addElement2f(2, (x + 0.5f) / 2.f, (y + 0.5f) / 2.f);
 	//addElement3f(0, 300 * (x - 0.5f), 0.f, 300 * (y - 0.5f));
 	//addElement2f(1, (x + 0.5f) / 2.f, (y + 0.5f) / 2.f); // TODO: add tex coords
 	//addElement3f(2, 0, 1, 0);

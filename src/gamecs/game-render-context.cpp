@@ -2,11 +2,12 @@
 
 #include "core/timing.hpp"
 
-#define DATA_BUFFER_SIZE (sizeof(Matrix) * Rig::MAX_JOINTS \
-		+ sizeof(float) + 3 * sizeof(Vector3f) + sizeof(float))
-#define CAMERA_POS_OFFSET (sizeof(Matrix) * Rig::MAX_JOINTS \
-		+ 2 * sizeof(Vector3f)/* + sizeof(float)*/)
-#define TIME_OFFSET (sizeof(Matrix) * Rig::MAX_JOINTS + 11 * sizeof(float))
+static constexpr size_t DATA_BUFFER_SIZE = sizeof(Matrix) * Rig::MAX_JOINTS 
+		+ sizeof(float) + 3 * (3 * sizeof(float)) + sizeof(float) + 3 * sizeof(float);
+static constexpr size_t CAMERA_POS_OFFSET = sizeof(Matrix) * Rig::MAX_JOINTS
+		+ 2 * sizeof(Vector3f);
+static constexpr size_t TIME_OFFSET = sizeof(Matrix) * Rig::MAX_JOINTS + 11 * sizeof(float);
+static constexpr size_t FOG_OFFSET = TIME_OFFSET + sizeof(float);
 
 static void color(uint32 rgb, float* out) {
 	out[0] = (float)((rgb >> 16) & 0xFF) / 255.f;
@@ -22,8 +23,15 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, skinnedMeshShader(assetManager.getShader("skinned-shader"))
 			, fontShader(assetManager.getShader("font-shader"))
 			, skyboxShader(assetManager.getShader("skybox-shader"))
+			, oceanShader(assetManager.getShader("ocean-shader"))
 			, mipmapSampler(device, RenderDevice::FILTER_NEAREST_MIPMAP_NEAREST)
 			, linearSampler(device, RenderDevice::FILTER_LINEAR)
+			, reflectionTexture(device, RenderDevice::FORMAT_RGB, 400, 300)
+			, reflectionTarget(device, reflectionTexture)
+			, reflectionContext(device, reflectionTarget)
+			, refractionTexture(device, RenderDevice::FORMAT_RGB, 400, 300)
+			, refractionTarget(device, refractionTexture)
+			, refractionContext(device, refractionTarget)
 			, camera(perspective)
 			, screenProjection(Matrix::ortho(0.f, 800.f, 0.f, 600.f, 1.f, -1.f))
 			, textQuad(assetManager.getVertexArray("text-quad"))
@@ -41,18 +49,11 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 	
 	dataBuffer.update(data, sizeof(Matrix) * Rig::MAX_JOINTS,
 			sizeof(data));
-}
 
-void GameRenderContext::renderMesh(VertexArray& vertexArray,
-		Material& material, const Matrix& transform) {
-	meshRenderBuffer[std::make_pair(&vertexArray, &material)].push_back(camera.viewProjection * transform);
-	meshRenderBuffer[std::make_pair(&vertexArray, &material)].push_back(transform);
-}
-
-void GameRenderContext::renderSkinnedMesh(VertexArray& vertexArray,
-		Material& material, const Matrix& transform, Rig& rig) {
-	skinnedMeshRenderBuffer[std::make_pair(&vertexArray, &material)].emplace_back(
-			camera.viewProjection * transform, transform, &rig);
+	data[0] = 0.5f;
+	data[1] = 0.5f;
+	data[2] = 0.5f;
+	dataBuffer.update(data, FOG_OFFSET, 3 * sizeof(float));
 }
 
 void GameRenderContext::renderText(Font& font, const String& text,
@@ -76,16 +77,6 @@ void GameRenderContext::renderText(Font& font, const String& text,
 }
 
 void GameRenderContext::flush() {
-	Material* currentMaterial = nullptr;
-	Font* currentFont = nullptr;
-	
-	Material* material;
-	Font* font;
-
-	VertexArray* vertexArray;
-	size_t numTransforms;
-
-	// draw static meshes
 	dataBuffer.update(&camera.position, CAMERA_POS_OFFSET, 3 * sizeof(float));
 
 	drawParams.sourceBlend = RenderDevice::BLEND_FUNC_NONE;
@@ -93,6 +84,69 @@ void GameRenderContext::flush() {
 
 	float t = (float)Time::getTime();
 	dataBuffer.update(&t, TIME_OFFSET, sizeof(float));
+
+	reflectionContext.clear(true);
+	refractionContext.clear(true);
+
+	// draw static meshes
+	flushStaticMeshes();
+
+	// draw ocean
+	if (ocean != nullptr) {
+		Matrix mt = Matrix::translate(Vector3f(camera.position[0], 0.f, camera.position[2]));
+		Matrix ms[] = {camera.viewProjection * mt, mt};
+		ocean->updateBuffer(3, ms, 2 * sizeof(Matrix));
+
+		getDevice().setClipEnabled(true);
+
+		if (skybox != nullptr) {
+			skyboxShader.setSampler("cubemap", skybox->getId(), linearSampler, 0,
+					RenderDevice::TEXTURE_TYPE_CUBE_MAP);
+			Matrix m = camera.reflectMVP * Matrix::translate(camera.position * Vector3f(1.f, -1.f, 1.f));
+
+			skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
+			reflectionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
+
+			m = camera.viewProjection * Matrix::translate(camera.position);
+			skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
+			refractionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
+		}
+
+		getDevice().setClipEnabled(false);
+
+		oceanShader.setSampler("reflection", reflectionTexture, linearSampler, 0);
+		oceanShader.setSampler("refraction", refractionTexture, linearSampler, 1);
+		draw(oceanShader, *ocean, drawParams, 1);
+	}
+
+	// draw rigged meshes
+	flushSkinnedMeshes();
+
+	// draw skybox
+	if (skybox != nullptr) {
+		skyboxShader.setSampler("cubemap", skybox->getId(), linearSampler, 0,
+				RenderDevice::TEXTURE_TYPE_CUBE_MAP);
+		Matrix m = camera.viewProjection * Matrix::translate(camera.position);
+
+		skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
+		draw(skyboxShader, skyboxMesh, drawParams, 1);
+	}
+
+	// draw text
+	dataBuffer.update(&screenProjection, sizeof(Matrix));
+
+	drawParams.sourceBlend = RenderDevice::BLEND_FUNC_ONE;
+	drawParams.destBlend = RenderDevice::BLEND_FUNC_ONE;
+
+	flushText();
+}
+
+inline void GameRenderContext::flushStaticMeshes() {
+	Material* currentMaterial = nullptr;
+	Material* material;
+
+	VertexArray* vertexArray;
+	size_t numTransforms;
 
 	for (auto it = std::begin(meshRenderBuffer), end = std::end(meshRenderBuffer); it != end; ++it) {
 		numTransforms = it->second.size();
@@ -112,11 +166,19 @@ void GameRenderContext::flush() {
 		vertexArray->updateBuffer(4, &it->second[0], sizeof(Matrix) * numTransforms);
 		
 		draw(staticMeshShader, *vertexArray, drawParams, numTransforms);
+		//reflectionContext.draw(staticMeshShader, *vertexArray, drawParams, numTransforms);
 
 		it->second.clear();
 	}
+}
 
-	// draw rigged meshes
+inline void GameRenderContext::flushSkinnedMeshes() {
+	Material* currentMaterial = nullptr;
+	Material* material;
+
+	VertexArray* vertexArray;
+	size_t numTransforms;
+
 	for (auto it = std::begin(skinnedMeshRenderBuffer),
 			end = std::end(skinnedMeshRenderBuffer); it != end; ++it) {
 		numTransforms = it->second.size();
@@ -141,22 +203,13 @@ void GameRenderContext::flush() {
 		
 		it->second.clear();
 	}
+}
 
-	// draw skybox
-	if (skybox != nullptr) {
-		skyboxShader.setSampler("cubemap", skybox->getId(), linearSampler, 0,
-				RenderDevice::TEXTURE_TYPE_CUBE_MAP);
-		Matrix m = camera.viewProjection * Matrix::translate(camera.position);
+inline void GameRenderContext::flushText() {
+	Font* currentFont = nullptr;
+	Font* font;
 
-		skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
-		draw(skyboxShader, skyboxMesh, drawParams, 1);
-	}
-
-	// draw text
-	dataBuffer.update(&screenProjection, sizeof(Matrix));
-
-	drawParams.sourceBlend = RenderDevice::BLEND_FUNC_ONE;
-	drawParams.destBlend = RenderDevice::BLEND_FUNC_ONE;
+	size_t numTransforms;
 
 	for (auto it = std::begin(textRenderBuffer), end = std::end(textRenderBuffer); it != end; ++it) {
 		numTransforms = it->second.positions.size();

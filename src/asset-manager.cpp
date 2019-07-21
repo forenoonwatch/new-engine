@@ -9,9 +9,9 @@ AssetManager::AssetManager(RenderDevice& device)
 	StringStream shaderText;
 	String shaderFiles[] = {"./res/shaders/basic-shader.glsl",
 			"./res/shaders/skinned-shader.glsl", "./res/shaders/font-shader.glsl",
-			"./res/shaders/skybox-shader.glsl"};
+			"./res/shaders/skybox-shader.glsl", "./res/shaders/ocean-shader.glsl"};
 	String shaderNames[] = {"basic-shader", "skinned-shader", "font-shader",
-			"skybox-shader"};
+			"skybox-shader", "ocean-shader"};
 
 	for (uint32 i = 0; i < ARRAY_SIZE_IN_ELEMENTS(shaderFiles); ++i) {
 		shaderText.str("");

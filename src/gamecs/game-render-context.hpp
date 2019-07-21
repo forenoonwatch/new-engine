@@ -10,10 +10,10 @@
 #include "rendering/font.hpp"
 #include "rendering/cube-map.hpp"
 
-#include "util-components.hpp"
 #include "camera.hpp"
+#include "particles.hpp"
 
-// TODO: replace Texture with Material
+// TODO: replace Texture with Material DONE
 // TODO: add proper sorting and draw tag command whatever things
 // http://realtimecollisiondetection.net/blog/?p=86
 class GameRenderContext : public RenderContext {
@@ -28,9 +28,12 @@ class GameRenderContext : public RenderContext {
 		void renderText(Font& font, const String& text,
 				const Vector3f& color, float x, float y);
 
+		void emitParticle(ParticleEmitter& emitter, const Vector3f& position);
+
 		void flush();
 
 		inline void setSkybox(CubeMap* skybox) { this->skybox = skybox; }
+		inline void setOcean(VertexArray* ocean) { this->ocean = ocean; }
 
 		inline Camera& getCamera() { return camera; }
 	private:
@@ -52,15 +55,29 @@ class GameRenderContext : public RenderContext {
 			Vector3f color;
 		};
 
+		void flushStaticMeshes();
+		void flushSkinnedMeshes();
+		void flushText();
+		void flushParticles(); // TODO: differentiate between opaque/transparent
+
 		RenderDevice::DrawParams& drawParams;
 		
 		Shader& staticMeshShader;
 		Shader& skinnedMeshShader;
 		Shader& fontShader;
 		Shader& skyboxShader;
+		Shader& oceanShader;
 
 		Sampler mipmapSampler;
 		Sampler linearSampler;
+
+		Texture reflectionTexture;
+		RenderTarget reflectionTarget;
+		RenderContext reflectionContext;
+
+		Texture refractionTexture;
+		RenderTarget refractionTarget;
+		RenderContext refractionContext;
 
 		Camera camera;
 		Matrix screenProjection;
@@ -71,9 +88,12 @@ class GameRenderContext : public RenderContext {
 		UniformBuffer dataBuffer;
 
 		CubeMap* skybox;
+		VertexArray* ocean;
 
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> meshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;
 		TreeMap<Font*, Text> textRenderBuffer;
+		Array<Particle> particles;
 };
 
+#include "game-render-context.inl"

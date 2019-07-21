@@ -8,6 +8,7 @@ class Water : public IndexedModel {
 
 	private:
 		void createOcean(int32);
+		void createSimpleGrid();
 
 		void addVertexSkirt(float, float);
 		void addVertexRing(float, float);
