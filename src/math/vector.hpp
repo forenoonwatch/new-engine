@@ -88,6 +88,8 @@ class Vector3f {
 
 		Vector3f lerp(const Vector3f& dest, float amt) const;
 
+		Vector3f projectOnto(const Vector3f&) const;
+
 		Vector3f toDegrees() const;
 		Vector3f toRadians() const;
 

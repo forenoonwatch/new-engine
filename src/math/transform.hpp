@@ -53,7 +53,9 @@ class Transform {
 		FORCEINLINE void setScale(const Vector3f& scale);
 
 		Matrix inverse() const;
+
 		Transform& lerp(const Transform& dest, float amt, Transform& result) const;
+		void lookAt(const Vector3f& point);
 	private:
 		Vector3f translation;
 		Quaternion rotation;

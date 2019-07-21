@@ -22,3 +22,15 @@ Transform& Transform::lerp(const Transform& dest, float amt, Transform& result) 
 	result.setRotation(rotation.slerp(dest.getRotation(), amt));
 	result.setScale(scale.lerp(dest.getScale(), amt));
 }
+
+void Transform::lookAt(const Vector3f& point) {
+	Vector3f fwd = (point - translation).normalized();
+	Vector3f rht = Vector3f(0.f, 1.f, 0.f).cross(fwd).normalized();
+	Vector3f up = fwd.cross(rht);
+
+	rotation = Quaternion::fromAxes(rht, up, fwd);
+	/*float dt = fwd[2]; // fwd.dot(Vector3f.FORWARD) aka (0, 0, 1)
+	fwd = Vector3f(0.f, 0.f, 1.f).cross(fwd);
+
+	rotation = Quaternion(fwd[0], fwd[1], fwd[2], dt).normalized();*/
+}

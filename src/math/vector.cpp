@@ -137,6 +137,10 @@ Vector3f Vector3f::lerp(const Vector3f& dest, float amt) const {
 	return Vector3f(vec + (dest.vec - vec) * Vector::load1f(amt));
 }
 
+Vector3f Vector3f::projectOnto(const Vector3f& dest) const {
+	return Vector3f(vec * Vector::load1f(dot(dest)));
+}
+
 Vector3f Vector3f::toDegrees() const {
 	return Vector3f(vec * Vector::load1f(MATH_RAD_TO_DEG_CONV));
 }

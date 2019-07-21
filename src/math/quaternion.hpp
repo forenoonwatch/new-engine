@@ -10,6 +10,9 @@ public:
 	FORCEINLINE Quaternion(float x, float y, float z, float w);
 	FORCEINLINE Quaternion(const Vector3f& axis, float angle);
 	
+	static Quaternion fromAxes(const Vector3f& right,
+			const Vector3f& up, const Vector3f& forward);
+	
 	FORCEINLINE float operator[](uint32 index) const;
 	FORCEINLINE Quaternion operator+(const Quaternion& other) const;
 	FORCEINLINE Quaternion operator+=(const Quaternion& other);
@@ -40,9 +43,13 @@ public:
 	void axisAndAngle(Vector3f& axis, float& angle) const;
 
 	Vector3f rotate(const Vector3f& other) const;
+	Quaternion rotateBy(const Quaternion& other) const;
 	Quaternion slerp(const Quaternion& dest, float amt, float errorMargin=1.e-4f) const;
 	Quaternion conjugate() const;
 	Quaternion inverse() const;
+
+	// https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis 
+	Quaternion getRotationAroundAxis(const Vector3f& direction) const;
 
 	FORCEINLINE Vector3f getAxisX() const;
 	FORCEINLINE Vector3f getAxisY() const;
