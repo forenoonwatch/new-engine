@@ -74,6 +74,8 @@ class GameRenderContext : public RenderContext {
 		Shader& fontShader;
 		Shader& skyboxShader;
 		Shader& oceanShader;
+		Shader& staticMirrorMeshShader;
+		Shader& textureShader;
 
 		Sampler mipmapSampler;
 		Sampler linearSampler;
@@ -104,6 +106,7 @@ class GameRenderContext : public RenderContext {
 
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> meshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;
+		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> mirrorMeshRenderBuffer;
 		TreeMap<Font*, Text> textRenderBuffer;
 		Array<Particle> particles;
 };

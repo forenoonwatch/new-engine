@@ -26,6 +26,8 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, fontShader(assetManager.getShader("font-shader"))
 			, skyboxShader(assetManager.getShader("skybox-shader"))
 			, oceanShader(assetManager.getShader("ocean-shader"))
+			, staticMirrorMeshShader(assetManager.getShader("static-mirror-shader"))
+			, textureShader(assetManager.getShader("texture-shader"))
 			, mipmapSampler(device, RenderDevice::FILTER_NEAREST_MIPMAP_NEAREST)
 			, linearSampler(device, RenderDevice::FILTER_LINEAR)
 			, repeatSampler(device, RenderDevice::FILTER_LINEAR,
@@ -52,12 +54,16 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 	staticMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
 	skinnedMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
 	skyboxShader.setUniformBuffer("ShaderData", dataBuffer, 0);
+	staticMirrorMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
 
 	skinnedMeshShader.setBufferBlock("AnimationData", 1);
 	skinnedMeshShader.setUniformBuffer("AnimationData", animBuffer, 1);
 
 	fontShader.setBufferBlock("ShaderData", 1);
 	fontShader.setUniformBuffer("ShaderData", fontBuffer, 1);
+
+	textureShader.setBufferBlock("ShaderData", 1);
+	textureShader.setUniformBuffer("ShaderData", fontBuffer, 1);
 
 	float data[] = {0.f, 50.f, -100.f, 0.4f, 1.f, 1.f, 1.f};
 	//color(0xFAF7D9, &data[4]);
@@ -109,8 +115,27 @@ void GameRenderContext::flush() {
 	reflectionContext.clear(true);
 	refractionContext.clear(true);
 
+	// draw reflection and refraction skyboxes
+	if (ocean != nullptr && skybox != nullptr) {
+		skyboxShader.setSampler("cubemap", skybox->getId(), linearSampler, 0,
+				RenderDevice::TEXTURE_TYPE_CUBE_MAP);
+		Matrix m = camera.reflectMVP * Matrix::translate(camera.position
+				* Vector3f(1.f, -1.f, 1.f));
+
+		skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
+		reflectionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
+
+		m = camera.viewProjection * Matrix::translate(camera.position);
+		skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
+		refractionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
+	}
+
 	// draw static meshes
+	getDevice().setClipEnabled(true);
+
 	flushStaticMeshes();
+
+	getDevice().setClipEnabled(false);
 
 	// draw ocean
 	if (ocean != nullptr) {
@@ -118,27 +143,10 @@ void GameRenderContext::flush() {
 		Matrix ms[] = {camera.viewProjection * mt, mt};
 		ocean->updateBuffer(3, ms, 2 * sizeof(Matrix));
 
-		getDevice().setClipEnabled(true);
-
-		if (skybox != nullptr) {
-			skyboxShader.setSampler("cubemap", skybox->getId(), linearSampler, 0,
-					RenderDevice::TEXTURE_TYPE_CUBE_MAP);
-			Matrix m = camera.reflectMVP * Matrix::translate(camera.position * Vector3f(1.f, -1.f, 1.f));
-
-			skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
-			reflectionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
-
-			m = camera.viewProjection * Matrix::translate(camera.position);
-			skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
-			refractionContext.draw(skyboxShader, skyboxMesh, drawParams, 1);
-		}
-
-		getDevice().setClipEnabled(false);
-
 		oceanShader.setSampler("reflection", reflectionTexture, repeatSampler, 0);
 		oceanShader.setSampler("refraction", refractionTexture, repeatSampler, 1);
-		oceanShader.setSampler("normalMap", *oceanNormal, repeatSampler, 2);
-		//oceanShader.setSampler("dudvMap", *oceanDUDV, repeatSampler, 3);
+		//oceanShader.setSampler("normalMap", *oceanNormal, repeatSampler, 2);
+		oceanShader.setSampler("dudvMap", *oceanDUDV, repeatSampler, 2);
 		draw(oceanShader, *ocean, drawParams, 1);
 	}
 
@@ -189,7 +197,29 @@ inline void GameRenderContext::flushStaticMeshes() {
 		vertexArray->updateBuffer(4, &it->second[0], sizeof(Matrix) * numTransforms);
 		
 		draw(staticMeshShader, *vertexArray, drawParams, numTransforms);
-		//reflectionContext.draw(staticMeshShader, *vertexArray, drawParams, numTransforms);
+
+		it->second.clear();
+	}
+
+	for (auto it = std::begin(mirrorMeshRenderBuffer), end = std::end(mirrorMeshRenderBuffer);
+			it != end; ++it) {
+		numTransforms = it->second.size();
+
+		if (numTransforms == 0) {
+			continue;
+		}
+
+		vertexArray = it->first.first;
+		material = it->first.second;
+
+		if (material != currentMaterial) {
+			currentMaterial = material;
+			staticMeshShader.setMaterial(*material, mipmapSampler);
+		}
+
+		vertexArray->updateBuffer(4, &it->second[0], sizeof(Matrix) * numTransforms);
+		
+		reflectionContext.draw(staticMirrorMeshShader, *vertexArray, drawParams, numTransforms);
 
 		it->second.clear();
 	}

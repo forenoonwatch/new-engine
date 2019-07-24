@@ -3,13 +3,12 @@
 varying vec2 texCoord0;
 
 #if defined(VS_BUILD)
-Layout(0) attribute vec4 vertex; // <posX, posY, texU, texV>
+Layout(0) attribute vec4 vertex;
 Layout(1) attribute vec4 positions;
 Layout(2) attribute vec4 sizes;
 
 layout (std140) uniform ShaderData {
 	mat4 projection;
-	vec3 textColor;
 };
 
 void main() {
@@ -21,16 +20,10 @@ void main() {
 #elif defined(FS_BUILD)
 DeclareFragOutput(0, vec4);
 
-uniform sampler2D font;
-
-layout (std140) uniform ShaderData {
-	mat4 projection;
-	vec3 textColor;
-};
+uniform sampler2D texImage;
 
 void main() {
-	vec4 color = texture2D(font, texCoord0);
-
-	SetFragOutput(0, vec4(color.x * textColor, color.x));
+	SetFragOutput(0, texture2D(texImage, texCoord0));
 }
+
 #endif
