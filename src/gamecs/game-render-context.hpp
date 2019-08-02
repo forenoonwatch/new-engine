@@ -30,8 +30,7 @@ class GameRenderContext : public RenderContext {
 				const Matrix& transform, Rig& rig);
 		void renderText(Font& font, const String& text,
 				const Vector3f& color, float x, float y);
-
-		void emitParticle(ParticleEmitter& emitter, const Vector3f& position);
+		void renderParticleEmitter(FeedbackBuffer& particleBuffer, Texture& texture);
 
 		void flush();
 
@@ -76,6 +75,8 @@ class GameRenderContext : public RenderContext {
 		Shader& oceanShader;
 		Shader& staticMirrorMeshShader;
 		Shader& textureShader;
+		Shader& particleShader;
+		Shader& billboardShader;
 
 		Sampler mipmapSampler;
 		Sampler linearSampler;
@@ -98,6 +99,7 @@ class GameRenderContext : public RenderContext {
 		UniformBuffer dataBuffer;
 		UniformBuffer animBuffer;
 		UniformBuffer fontBuffer;
+		UniformBuffer particleBuffer;
 
 		CubeMap* skybox;
 		VertexArray* ocean;
@@ -108,7 +110,7 @@ class GameRenderContext : public RenderContext {
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> mirrorMeshRenderBuffer;
 		TreeMap<Font*, Text> textRenderBuffer;
-		Array<Particle> particles;
+		TreeMap<Texture*, Array<FeedbackBuffer*>> particleRenderBuffer;
 };
 
 #include "game-render-context.inl"

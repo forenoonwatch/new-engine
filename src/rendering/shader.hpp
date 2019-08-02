@@ -8,9 +8,10 @@
 
 class Shader {
 	public:
-		inline Shader(RenderDevice& deviceIn, const String& text)
+		inline Shader(RenderDevice& deviceIn, const String& text,
+				const RenderDevice::FeedbackShaderParams* feedbackParams = nullptr)
 			: device(&deviceIn)
-			, deviceID(device->createShaderProgram(text)) {}
+			, deviceID(device->createShaderProgram(text, feedbackParams)) {}
 
 		inline void setBufferBlock(const String& name, uint32 block);
 		inline void setUniformBuffer(const String& name, UniformBuffer& buffer, uint32 index);

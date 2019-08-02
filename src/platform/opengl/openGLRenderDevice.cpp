@@ -62,6 +62,7 @@ bool OpenGLRenderDevice::globalInit() {
 OpenGLRenderDevice::OpenGLRenderDevice(Window& window)
 		: shaderVersion("")
 		, version(0)
+		, fbmCounter(0)
 		, boundFBO(0)
 		, viewportFBO(0)
 		, boundVAO(0)
@@ -120,25 +121,27 @@ OpenGLRenderDevice::~OpenGLRenderDevice() {
 }
 
 void OpenGLRenderDevice::clear(uint32 fbo, bool shouldClearColor, bool shouldClearDepth,
-		bool shouldClearStencil, const Color& color, uint32 stencil)
-{
+		bool shouldClearStencil, const Color& color, uint32 stencil) {
 	setFBO(fbo);
+
 	uint32 flags = 0;
-	if(shouldClearColor) {
+
+	if (shouldClearColor) {
 		flags |= GL_COLOR_BUFFER_BIT;
 		glClearColor(color[0], color[1], color[2], color[3]);
 	}
-	if(shouldClearDepth) {
+
+	if (shouldClearDepth) {
 		flags |= GL_DEPTH_BUFFER_BIT;
 	}
-	if(shouldClearStencil) {
+
+	if (shouldClearStencil) {
 		flags |= GL_STENCIL_BUFFER_BIT;
 		setStencilWriteMask(stencil);
 	}
 
 	glClear(flags);
 }
-
 
 /*
  * Complete drawing process:
@@ -229,16 +232,18 @@ void OpenGLRenderDevice::setVAO(uint32 vao) {
 	boundVAO = vao;
 }
 
-void OpenGLRenderDevice::setBlending(enum BlendFunc sourceBlend, enum BlendFunc destBlend)
-{
-	if(sourceBlend == currentSourceBlend && destBlend == currentDestBlend) {
+void OpenGLRenderDevice::setBlending(enum BlendFunc sourceBlend, enum BlendFunc destBlend) {
+	if (sourceBlend == currentSourceBlend && destBlend == currentDestBlend) {
 		return;
-	} else if(sourceBlend == BLEND_FUNC_NONE || destBlend == BLEND_FUNC_NONE) {
+	}
+	else if (sourceBlend == BLEND_FUNC_NONE || destBlend == BLEND_FUNC_NONE) {
 		glDisable(GL_BLEND);
-	} else if(currentSourceBlend == BLEND_FUNC_NONE || currentDestBlend == BLEND_FUNC_NONE) {
+	}
+	else if (currentSourceBlend == BLEND_FUNC_NONE || currentDestBlend == BLEND_FUNC_NONE) {
 		glEnable(GL_BLEND);
 		glBlendFunc(sourceBlend, destBlend);
-	} else {
+	}
+	else {
 		glBlendFunc(sourceBlend, destBlend);
 	}
 
@@ -248,51 +253,55 @@ void OpenGLRenderDevice::setBlending(enum BlendFunc sourceBlend, enum BlendFunc 
 
 
 void OpenGLRenderDevice::setScissorTest(bool enable, uint32 startX, uint32 startY,
-			uint32 width, uint32 height)
-{
-	if(!enable) {
-		if(!scissorTestEnabled) {
+			uint32 width, uint32 height) {
+	if (!enable) {
+		if (!scissorTestEnabled) {
 			return;
-		} else {
+		}
+		else {
 			glDisable(GL_SCISSOR_TEST);
 			scissorTestEnabled = false;
 			return;
 		}
 	}
-	if(!scissorTestEnabled) {
+
+	if (!scissorTestEnabled) {
 		glEnable(GL_SCISSOR_TEST);
 	}
+
 	glScissor(startX, startY, width, height);
 	scissorTestEnabled = true;
 }
 
-void OpenGLRenderDevice::setFaceCulling(enum FaceCulling cullingMode)
-{
-	if(cullingMode == currentFaceCulling) {
+void OpenGLRenderDevice::setFaceCulling(enum FaceCulling cullingMode) {
+	if (cullingMode == currentFaceCulling) {
 		return;
 	}
 	
-	if(cullingMode == FACE_CULL_NONE) { // Face culling is enabled, but needs to be disabled
+	if (cullingMode == FACE_CULL_NONE) { // Face culling is enabled, but needs to be disabled
 		glDisable(GL_CULL_FACE);
-	} else if(currentFaceCulling == FACE_CULL_NONE) { // Face culling is disabled but needs to be enabled
+	}
+	else if (currentFaceCulling == FACE_CULL_NONE) { // Face culling is disabled but needs to be enabled
 		glEnable(GL_CULL_FACE);
 		glCullFace(cullingMode);
-	} else { // Only need to change culling state
+	}
+	else { // Only need to change culling state
 		glCullFace(cullingMode);
 	}
+
 	currentFaceCulling = cullingMode;
 }
 
-void OpenGLRenderDevice::setDepthTest(bool shouldWrite, enum DrawFunc depthFunc)
-{
-	if(shouldWrite != shouldWriteDepth) {
+void OpenGLRenderDevice::setDepthTest(bool shouldWrite, enum DrawFunc depthFunc) {
+	if (shouldWrite != shouldWriteDepth) {
 		glDepthMask(shouldWrite ? GL_TRUE : GL_FALSE);
 		shouldWriteDepth = shouldWrite;
 	}
 
-	if(depthFunc == currentDepthFunc) {
+	if (depthFunc == currentDepthFunc) {
 		return;
 	}
+
 	glDepthFunc(depthFunc);
 	currentDepthFunc = depthFunc;
 }
@@ -330,11 +339,11 @@ void OpenGLRenderDevice::setStencilTest(bool enable, enum DrawFunc stencilFunc,
 	setStencilWriteMask(stencilWriteMask);
 }
 
-void OpenGLRenderDevice::setStencilWriteMask(uint32 mask)
-{
-	if(currentStencilWriteMask == mask) {
+void OpenGLRenderDevice::setStencilWriteMask(uint32 mask) {
+	if (currentStencilWriteMask == mask) {
 		return;
 	}
+
 	glStencilMask(mask);
 	currentStencilWriteMask = mask;
 }
@@ -446,10 +455,12 @@ uint32 OpenGLRenderDevice::createVertexArray(const float** vertexData,
 	setVAO(VAO);
 
 	glGenBuffers(numBuffers, buffers);
-	for(uint32 i = 0, attribute = 0; i < numBuffers-1; i++) {
+
+	for (uint32 i = 0, attribute = 0; i < numBuffers - 1; i++) {
 		enum BufferUsage attribUsage = usage;
 		bool inInstancedMode = false;
-		if(i >= numVertexComponents) {
+
+		if (i >= numVertexComponents) {
 			attribUsage = USAGE_DYNAMIC_DRAW;
 			inInstancedMode = true;
 		}
@@ -466,17 +477,19 @@ uint32 OpenGLRenderDevice::createVertexArray(const float** vertexData,
 
 		// Because OpenGL doesn't support attributes with more than 4
 		// elements, each set of 4 elements gets its own attribute.
-		uint32 elementSizeDiv = elementSize/4;
-		uint32 elementSizeRem = elementSize%4;
-		for(uint32 j = 0; j < elementSizeDiv; j++) {
+		uint32 elementSizeDiv = elementSize / 4;
+		uint32 elementSizeRem = elementSize % 4;
+
+		for (uint32 j = 0; j < elementSizeDiv; j++) {
 			glEnableVertexAttribArray(attribute);
 			glVertexAttribPointer(attribute, 4, GL_FLOAT, GL_FALSE,
 					elementSize * sizeof(GLfloat),
 					(const GLvoid*)(sizeof(GLfloat) * j * 4));
-			if(inInstancedMode) {
+			if( inInstancedMode) {
 				glVertexAttribDivisor(attribute, 1);
 			}
-			attribute++;
+
+			++attribute;
 		}
 
 		if (elementSizeRem != 0) {
@@ -507,33 +520,38 @@ uint32 OpenGLRenderDevice::createVertexArray(const float** vertexData,
 	vaoData.usage = usage;
 	vaoData.instanceComponentsStartIndex = numVertexComponents;
 	vaoMap[VAO] = vaoData;
+
 	return VAO;
 }
 
 void OpenGLRenderDevice::updateVertexArrayBuffer(uint32 vao, uint32 bufferIndex,
-			const void* data, uintptr dataSize)
-{
-	if(vao == 0) {
+			const void* data, uintptr dataSize) {
+	if (vao == 0) {
 		return;
 	}
 
 	HashMap<uint32, VertexArray>::iterator it = vaoMap.find(vao);
-	if(it == vaoMap.end()) {
+	if (it == vaoMap.end()) {
 		return;
 	}
+
 	const struct VertexArray* vaoData = &it->second;
 	enum BufferUsage usage;
-	if(bufferIndex >= vaoData->instanceComponentsStartIndex) {
+
+	if (bufferIndex >= vaoData->instanceComponentsStartIndex) {
 		usage = USAGE_DYNAMIC_DRAW;
-	} else {
+	}
+	else {
 		usage = vaoData->usage;
 	}
 
 	setVAO(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vaoData->buffers[bufferIndex]);
-	if(vaoData->bufferSizes[bufferIndex] >= dataSize) {
+	
+	if (vaoData->bufferSizes[bufferIndex] >= dataSize) {
 		glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize, data);
-	} else {
+	}
+	else {
 		glBufferData(GL_ARRAY_BUFFER, dataSize, data, usage);
 		vaoData->bufferSizes[bufferIndex] = dataSize;
 	}	
@@ -790,7 +808,8 @@ uint32 OpenGLRenderDevice::releaseUniformBuffer(uint32 buffer) {
 	return 0;
 }
 
-uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText) {
+uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText,
+		const FeedbackShaderParams* feedbackParams) {
 	GLuint shaderProgram = glCreateProgram();
 
 	if (shaderProgram == 0) {
@@ -805,10 +824,12 @@ uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText) {
 		"\n#define FS_BUILD\n#define GLSL_VERSION " + version + "\n" + shaderText;
 
 	ShaderProgram programData;
+	
 	if (!addShader(shaderProgram, vertexShaderText, GL_VERTEX_SHADER,
 				&programData.shaders)) {
 		return (uint32)-1; 
 	}
+
 	if (!addShader(shaderProgram, fragmentShaderText, GL_FRAGMENT_SHADER,
 				&programData.shaders)) {
 		return (uint32)-1;
@@ -822,6 +843,11 @@ uint32 OpenGLRenderDevice::createShaderProgram(const String& shaderText) {
 				&programData.shaders)) {
 			return (uint32)-1;
 		}
+	}
+
+	if (feedbackParams != nullptr) {
+		glTransformFeedbackVaryings(shaderProgram, feedbackParams->numVaryings,
+				feedbackParams->varyings, feedbackParams->bufferMode);
 	}
 	
 	glLinkProgram(shaderProgram);
@@ -880,7 +906,7 @@ uint32 OpenGLRenderDevice::releaseShaderProgram(uint32 shader) {
 
 	const struct ShaderProgram* shaderProgram = &programIt->second; 
 
-	for(Array<uint32>::const_iterator it = shaderProgram->shaders.begin();
+	for (Array<uint32>::const_iterator it = shaderProgram->shaders.begin();
 			it != shaderProgram->shaders.end(); ++it) {
 		glDetachShader(shader, *it);
 		glDeleteShader(*it);
@@ -892,6 +918,126 @@ uint32 OpenGLRenderDevice::releaseShaderProgram(uint32 shader) {
 	return 0;
 }
 
+uint32 OpenGLRenderDevice::createFeedbackBuffer(const float* initialData,
+		uintptr dataSize, uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs,
+		uint32 outputSize) {
+	FeedbackBuffer fb;
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	setVAO(vao);
+
+	fb.dataSize = dataSize;
+
+	fb.attribSizes = new uintptr[numAttribs];
+	Memory::memcpy(fb.attribSizes, attribSizes, numAttribs * sizeof(uintptr));
+	fb.numAttribs = numAttribs;
+	fb.outputSize = outputSize;
+	
+	fb.currVB = 0;
+	fb.currTFB = 1;
+
+	glGenTransformFeedbacks(2, fb.transformFeedbacks);
+	glGenBuffers(2, fb.dataBuffers);
+
+	for (uint32 i = 0; i < 2; ++i) {
+		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fb.transformFeedbacks[i]);
+		glBindBuffer(GL_ARRAY_BUFFER, fb.dataBuffers[i]);
+
+		glBufferData(GL_ARRAY_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize, initialData);
+
+		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fb.dataBuffers[i]);
+	}
+
+	//initFeedbackBuffer(&fb);
+
+	//uint32 newIndex = fbmCounter;
+	//++fbmCounter;
+	
+	//feedbackBufferMap[newIndex] = fb;
+	feedbackBufferMap[vao] = fb;
+
+	return vao;//newIndex;
+}
+
+void OpenGLRenderDevice::updateFeedbackBuffer(uint32 shader, uint32 feedbackBuffer) {
+	struct FeedbackBuffer* fb = &feedbackBufferMap[feedbackBuffer];
+
+	setShader(shader);
+	setVAO(feedbackBuffer);
+
+	//glEnable(GL_RASTERIZER_DISCARD);
+
+	glBindBuffer(GL_ARRAY_BUFFER, fb->dataBuffers[fb->currVB]);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fb->transformFeedbacks[fb->currTFB]);
+
+	float* offset = 0;
+	for (uint32 i = 0; i < fb->numAttribs; ++i) {
+		glEnableVertexAttribArray(i);
+		glVertexAttribPointer(i, fb->attribSizes[i], GL_FLOAT, false,
+				fb->dataSize, offset);
+
+		offset += fb->attribSizes[i];
+	}
+
+	glBeginTransformFeedback(GL_POINTS);
+	
+	if (fb->firstCall) {
+		fb->firstCall = false;
+		glDrawArrays(GL_POINTS, 0, 1);
+	}
+	else {
+		glDrawTransformFeedback(GL_POINTS, fb->transformFeedbacks[fb->currVB]);
+	}
+
+	glEndTransformFeedback();
+
+	//glDisable(GL_RASTERIZER_DISCARD);
+}
+
+void OpenGLRenderDevice::drawFeedbackBuffer(uint32 fbo, uint32 shader,
+		uint32 feedbackBuffer, const DrawParams& drawParams) {
+	struct FeedbackBuffer* fb = &feedbackBufferMap[feedbackBuffer];
+
+	setFBO(fbo);
+	setViewport(fbo);
+	setBlending(drawParams.sourceBlend, drawParams.destBlend);
+	setScissorTest(drawParams.useScissorTest,
+			drawParams.scissorStartX, drawParams.scissorStartY,
+			drawParams.scissorWidth, drawParams.scissorHeight);
+	setFaceCulling(drawParams.faceCulling);
+	setDepthTest(drawParams.shouldWriteDepth, drawParams.depthFunc);
+	setShader(shader);
+	setVAO(feedbackBuffer);
+
+	//glDepthMask(false);
+	glDrawTransformFeedback(GL_POINTS, fb->transformFeedbacks[fb->currTFB]);
+	//glDepthMask(true);
+
+	fb->currVB = fb->currTFB;
+	fb->currTFB = (fb->currTFB + 1) & 0x1;
+}
+
+void OpenGLRenderDevice::releaseFeedbackBuffer(uint32 feedbackBuffer) {
+	HashMap<uint32, FeedbackBuffer>::iterator fbIt = feedbackBufferMap.find(feedbackBuffer);
+
+	if (fbIt == feedbackBufferMap.end()) {
+		return;
+	}
+
+	struct FeedbackBuffer* fb = &fbIt->second;
+
+	delete[] fb->attribSizes;
+
+	glDeleteTransformFeedbacks(2, fb->transformFeedbacks);
+	glDeleteBuffers(2, fb->dataBuffers);
+
+	glDeleteVertexArrays(1, &feedbackBuffer);
+
+	feedbackBufferMap.erase(fbIt);
+}
+
 void OpenGLRenderDevice::setClipEnabled(bool enabled, uint32 plane) {
 	if (enabled) {
 		glEnable(GL_CLIP_DISTANCE0 + plane);
@@ -899,6 +1045,19 @@ void OpenGLRenderDevice::setClipEnabled(bool enabled, uint32 plane) {
 	else {
 		glDisable(GL_CLIP_DISTANCE0 + plane);
 	}
+}
+
+void OpenGLRenderDevice::setRasterizerDiscardEnabled(bool enabled) {
+	if (enabled) {
+		glEnable(GL_RASTERIZER_DISCARD);
+	}
+	else {
+		glDisable(GL_RASTERIZER_DISCARD);
+	}
+}
+
+void OpenGLRenderDevice::setDepthMaskEnabled(bool enabled) {
+	glDepthMask(enabled);
 }
 
 uint32 OpenGLRenderDevice::getVersion() {

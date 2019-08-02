@@ -13,3 +13,7 @@ inline void GameRenderContext::renderSkinnedMesh(VertexArray& vertexArray,
 	skinnedMeshRenderBuffer[std::make_pair(&vertexArray, &material)].emplace_back(
 			camera.viewProjection * transform, transform, &rig);
 }
+
+inline void GameRenderContext::renderParticleEmitter(FeedbackBuffer& particleBuffer, Texture& texture) {
+	particleRenderBuffer[&texture].push_back(&particleBuffer);
+}

@@ -6,6 +6,7 @@ static constexpr size_t DATA_BUFFER_SIZE = /*sizeof(Matrix) * Rig::MAX_JOINTS
 		+ */sizeof(float) + 3 * (3 * sizeof(float)) + sizeof(float) + 3 * sizeof(float);
 static constexpr size_t ANIM_BUFFER_SIZE = sizeof(Matrix) * Rig::MAX_JOINTS;
 static constexpr size_t FONT_BUFFER_SIZE = sizeof(Matrix) + 3 * sizeof(float);
+static constexpr size_t PARTICLE_BUFFER_SIZE = sizeof(Matrix) + 3 * sizeof(float);
 
 static constexpr size_t CAMERA_POS_OFFSET = 8 * sizeof(float);
 static constexpr size_t TIME_OFFSET = 11 * sizeof(float);
@@ -28,13 +29,16 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, oceanShader(assetManager.getShader("ocean-shader"))
 			, staticMirrorMeshShader(assetManager.getShader("static-mirror-shader"))
 			, textureShader(assetManager.getShader("texture-shader"))
+			, particleShader(assetManager.getShader("particle-shader"))
+			, billboardShader(assetManager.getShader("billboard-shader"))
 			, mipmapSampler(device, RenderDevice::FILTER_NEAREST_MIPMAP_NEAREST)
 			, linearSampler(device, RenderDevice::FILTER_LINEAR)
 			, repeatSampler(device, RenderDevice::FILTER_LINEAR,
 					RenderDevice::FILTER_LINEAR, RenderDevice::WRAP_REPEAT,
 					RenderDevice::WRAP_REPEAT)
 			, reflectionTexture(device, RenderDevice::FORMAT_RGB, 400, 300)
-			, reflectionTarget(device, reflectionTexture)
+			, reflectionTarget(device, reflectionTexture,
+					RenderDevice::ATTACHMENT_COLOR)
 			, reflectionContext(device, reflectionTarget)
 			, refractionTexture(device, RenderDevice::FORMAT_RGB, 400, 300)
 			, refractionTarget(device, refractionTexture)
@@ -49,7 +53,8 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, oceanDUDV(nullptr)
 			, dataBuffer(device, DATA_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, animBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
-			, fontBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
+			, fontBuffer(device, FONT_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
+			, particleBuffer(device, PARTICLE_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
 	//staticMeshShader.setBufferBlock("ShaderData", 0);
 	staticMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
 	skinnedMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
@@ -65,6 +70,12 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 	textureShader.setBufferBlock("ShaderData", 1);
 	textureShader.setUniformBuffer("ShaderData", fontBuffer, 1);
 
+	particleShader.setBufferBlock("ShaderData", 1);
+	particleShader.setUniformBuffer("ShaderData", particleBuffer, 1);
+
+	billboardShader.setBufferBlock("ShaderData", 1);
+	billboardShader.setUniformBuffer("ShaderData", particleBuffer, 1);
+
 	float data[] = {0.f, 50.f, -100.f, 0.4f, 1.f, 1.f, 1.f};
 	//color(0xFAF7D9, &data[4]);
 	color(0xFFFFFF, &data[4]);
@@ -75,12 +86,6 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 	data[1] = 0.5f;
 	data[2] = 0.5f;
 	dataBuffer.update(data, FOG_OFFSET, 3 * sizeof(float));
-}
-
-void GameRenderContext::emitParticle(ParticleEmitter& emitter,
-		const Vector3f& position) {
-	particles.emplace_back(&emitter, position, emitter.initialVelocity,
-			emitter.timeToLive);
 }
 
 void GameRenderContext::renderText(Font& font, const String& text,
@@ -162,6 +167,9 @@ void GameRenderContext::flush() {
 		skyboxMesh.updateBuffer(4, &m, sizeof(Matrix));
 		draw(skyboxShader, skyboxMesh, drawParams, 1);
 	}
+
+	// draw particles
+	flushParticles();
 
 	// draw text
 	fontBuffer.update(&screenProjection, sizeof(Matrix));
@@ -288,4 +296,62 @@ inline void GameRenderContext::flushText() {
 		it->second.positions.clear();
 		it->second.scales.clear();
 	}
+}
+
+inline void GameRenderContext::flushParticles() {
+	Texture* currentTexture = nullptr;
+	Texture* texture;
+
+	size_t numParticleEmitters;
+
+	float dt = 1.f / 60.f;
+	particleBuffer.update(&dt, sizeof(float));
+
+	drawParams.sourceBlend = RenderDevice::BLEND_FUNC_SRC_ALPHA;
+	drawParams.destBlend = RenderDevice::BLEND_FUNC_DST_ALPHA;
+
+	getDevice().setRasterizerDiscardEnabled(true);
+
+	for (auto it = std::begin(particleRenderBuffer), end = std::end(particleRenderBuffer);
+			it != end; ++it) {
+		numParticleEmitters = it->second.size();
+
+		if (numParticleEmitters == 0) {
+			continue;
+		}
+
+		for (uint32 i = 0; i < numParticleEmitters; ++i) {
+			updateFeedbackBuffer(particleShader, *it->second[i]);
+		}
+	}
+
+	getDevice().setRasterizerDiscardEnabled(false);
+	getDevice().setDepthMaskEnabled(false);
+
+	particleBuffer.update(&camera.viewProjection, sizeof(Matrix));
+	particleBuffer.update(&camera.position, sizeof(Matrix), 3 * sizeof(float));
+
+	for (auto it = std::begin(particleRenderBuffer), end = std::end(particleRenderBuffer);
+			it != end; ++it) {
+		numParticleEmitters = it->second.size();
+
+		if (numParticleEmitters == 0) {
+			continue;
+		}
+
+		texture = it->first;
+
+		if (texture != currentTexture) {
+			currentTexture = texture;
+			billboardShader.setSampler("billboard", texture->getId(), linearSampler, 1);
+		}
+
+		for (uint32 i = 0; i < numParticleEmitters; ++i) {
+			draw(billboardShader, *it->second[i], drawParams);
+		}
+
+		it->second.clear();
+	}
+
+	getDevice().setDepthMaskEnabled(true);
 }

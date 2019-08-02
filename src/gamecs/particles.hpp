@@ -6,43 +6,53 @@
 class ParticleEmitter;
 class GameRenderContext;
 
-class Particle {
+// analogue of the particle data in the particle shader
+struct Particle {
+	float type = 0.f; // default type for an Emitter
+	float position[3];
+	float velocity[3];
+	float age = 0;
+	float transScale[4];
+};
+
+// encapsulates emitter params
+class ParticleEmitter {
 	public:
-		Particle(ParticleEmitter* emitter = nullptr,
-					const Vector3f& position = Vector3f(),
-					const Vector3f& velocity = Vector3f(),
-					float timeToLive = 0.f)
-			: emitter(emitter)
-			, position(position)
-			, velocity(velocity)
-			, timeToLive(timeToLive) {}
+		inline ParticleEmitter(const Particle& emitterData)
+			: emitterData(emitterData) {}
 
-		Particle(Particle&&) = default;
+		inline Particle& getEmitterData() { return emitterData; }
+	private:
+		Particle emitterData;
+};
 
+class ParticleEmitterComponent : public ECSComponent<ParticleEmitterComponent> {
+	public:
 		ParticleEmitter* emitter;
-		Vector3f position;
-		Vector3f velocity;
-		float timeToLive;
-};
-
-class ParticleEmitter : public ECSComponent<ParticleEmitter> {
-	public:
-		Vector3f initialVelocity;
-		Vector3f acceleration;
+		FeedbackBuffer* feedbackBuffer;
 		Texture* texture;
-		float timeToLive;
-
-		float particlesPerSecond;
-		float counter;
+		Shader* shader;
 };
 
-class ParticleSystem : public BaseECSSystem {
+class ParticleUpdateSystem : public BaseECSSystem {
 	public:
-		ParticleSystem(GameRenderContext& renderContext)
+		ParticleUpdateSystem(GameRenderContext& renderContext)
 				: BaseECSSystem()
 				, renderContext(renderContext) {
-			addComponentType(TransformComponent::ID);
-			addComponentType(ParticleEmitter::ID);
+			addComponentType(ParticleEmitterComponent::ID);
+		}
+
+		virtual void updateComponents(float delta, BaseECSComponent** components);
+	private:
+		GameRenderContext& renderContext;
+};
+
+class ParticleRenderSystem : public BaseECSSystem {
+	public:
+		ParticleRenderSystem(GameRenderContext& renderContext)
+				: BaseECSSystem()
+				, renderContext(renderContext) {
+			addComponentType(ParticleEmitterComponent::ID);
 		}
 
 		virtual void updateComponents(float delta, BaseECSComponent** components);

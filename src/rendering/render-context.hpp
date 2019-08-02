@@ -2,6 +2,7 @@
 
 #include "shader.hpp"
 #include "vertex-array.hpp"
+#include "feedback-buffer.hpp"
 #include "render-target.hpp"
 
 class RenderContext {
@@ -25,6 +26,10 @@ class RenderContext {
 		inline void draw(Shader& shader, VertexArray& vertexArray, 
 				const RenderDevice::DrawParams& drawParams, uint32 numInstances,
 				uint32 numIndices);
+		inline void draw(Shader& shader, FeedbackBuffer& feedbackBuffer,
+				const RenderDevice::DrawParams& drawParams);
+
+		inline void updateFeedbackBuffer(Shader& shader, FeedbackBuffer& feedbackBuffer);
 
 		inline void setClearColor(const Color& color) { clearColor = color; }
 		inline const Color& getClearColor() const { return clearColor; }
@@ -50,6 +55,12 @@ inline void RenderContext::draw(Shader& shader, VertexArray& vertexArray,
 			drawParams, numInstances, numIndices);
 }
 
+inline void RenderContext::draw(Shader& shader, FeedbackBuffer& feedbackBuffer,
+		const RenderDevice::DrawParams& drawParams) {
+	device->drawFeedbackBuffer(target->getId(), shader.getId(),
+			feedbackBuffer.getID(), drawParams);
+}
+
 inline void RenderContext::clear(bool shouldClearColor, bool shouldClearDepth,
 		bool shouldClearStencil, uint32 stencil) {
 	device->clear(target->getId(), shouldClearColor, shouldClearDepth, shouldClearStencil,
@@ -60,3 +71,6 @@ inline void RenderContext::clear(bool shouldClearDepth) {
 	device->clear(target->getId(), true, shouldClearDepth, false, clearColor, 0);
 }
 
+inline void RenderContext::updateFeedbackBuffer(Shader& shader, FeedbackBuffer& feedbackBuffer) {
+	device->updateFeedbackBuffer(shader.getId(), feedbackBuffer.getID());
+}

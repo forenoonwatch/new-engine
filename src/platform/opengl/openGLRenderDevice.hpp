@@ -2,6 +2,8 @@
 
 #include "core/window.hpp"
 #include "math/color.hpp"
+
+#include "containers/array.hpp"
 #include "containers/hash-map.hpp"
 
 #include <SDL2/SDL.h>
@@ -143,6 +145,11 @@ class OpenGLRenderDevice {
 			GBUFFER_NUM_TEXTURES
 		};
 
+		enum FeedbackBufferMode {
+			BUFFER_INTERLEAVED_ATTRIBS = GL_INTERLEAVED_ATTRIBS,
+			BUFFER_SEPARATE_ATTRIBS = GL_SEPARATE_ATTRIBS
+		};
+
 		struct DrawParams {
 			enum PrimitiveType primitiveType = PRIMITIVE_TRIANGLES;
 			enum FaceCulling faceCulling = FACE_CULL_NONE;
@@ -163,6 +170,12 @@ class OpenGLRenderDevice {
 			uint32 scissorHeight = 0;
 			enum BlendFunc sourceBlend = BLEND_FUNC_NONE;
 			enum BlendFunc destBlend = BLEND_FUNC_NONE;
+		};
+
+		struct FeedbackShaderParams {
+			char** varyings;
+			uint32 numVaryings;
+			enum FeedbackBufferMode bufferMode = BUFFER_INTERLEAVED_ATTRIBS;
 		};
 		
 		static bool globalInit();
@@ -207,7 +220,8 @@ class OpenGLRenderDevice {
 		void updateUniformBuffer(uint32 buffer, const void* data, uintptr offset, uintptr dataSize);
 		uint32 releaseUniformBuffer(uint32 buffer);
 
-		uint32 createShaderProgram(const String& shaderText);
+		uint32 createShaderProgram(const String& shaderText,
+				const FeedbackShaderParams* feedbackParams = nullptr);
 		void setShaderUniformBuffer(uint32 shader, const String& uniformBufferName,
 				uint32 buffer, uint32 index);
 		void setShaderUniformBlockBinding(uint32 shader, const String& uniformBufferName, uint32 block);
@@ -215,13 +229,22 @@ class OpenGLRenderDevice {
 			uint32 texture, uint32 sampler, uint32 unit, enum TextureType textureType);
 		uint32 releaseShaderProgram(uint32 shader);
 
+		uint32 createFeedbackBuffer(const float* initialData, uintptr dataSize,
+				uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs, uint32 outputSize);
+		void updateFeedbackBuffer(uint32 shader, uint32 feedbackBuffer);
+		void releaseFeedbackBuffer(uint32 feedbackBuffer);
+
 		void setClipEnabled(bool enabled, uint32 plane = 0);
+		void setRasterizerDiscardEnabled(bool enabled);
+		void setDepthMaskEnabled(bool enabled);
 
 		void clear(uint32 fbo,
 				bool shouldClearColor, bool shouldClearDepth, bool shouldClearStencil,
 				const Color& color, uint32 stencil);
 		void draw(uint32 fbo, uint32 shader, uint32 vao, const DrawParams& drawParams,
 				uint32 numInstances, uint32 numElements);
+		void drawFeedbackBuffer(uint32 fbo, uint32 shader, uint32 feedbackBuffer,
+				const DrawParams& drawParams);
 	private:
 		struct VertexArray {
 			uint32* buffers;
@@ -249,6 +272,22 @@ class OpenGLRenderDevice {
 			uint32 depthTexture;
 		};
 
+		struct FeedbackBuffer {
+			uint32 dataBuffers[2];
+			uint32 transformFeedbacks[2];
+			
+			uintptr* attribSizes;
+			uint32 numAttribs;
+
+			uintptr dataSize;
+			uint32 outputSize;
+			
+			uint32 currVB;
+			uint32 currTFB;
+
+			bool firstCall = true;
+		};
+
 		static bool isInitialized;
 
 		DeviceContext context;
@@ -259,6 +298,9 @@ class OpenGLRenderDevice {
 		HashMap<uint32, FBOData> fboMap;
 		HashMap<uint32, ShaderProgram> shaderProgramMap;
 		HashMap<uint32, GBuffer> geometryBufferMap;
+		HashMap<uint32, FeedbackBuffer> feedbackBufferMap;
+
+		uint32 fbmCounter;
 
 		uint32 boundFBO;
 		uint32 viewportFBO;

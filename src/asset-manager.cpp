@@ -10,16 +10,30 @@ AssetManager::AssetManager(RenderDevice& device)
 	String shaderFiles[] = {"./res/shaders/basic-shader.glsl",
 			"./res/shaders/skinned-shader.glsl", "./res/shaders/font-shader.glsl",
 			"./res/shaders/skybox-shader.glsl", "./res/shaders/ocean-shader.glsl",
-			"./res/shaders/static-mirror-shader.glsl", "./res/shaders/texture-shader.glsl"};
+			"./res/shaders/static-mirror-shader.glsl", "./res/shaders/texture-shader.glsl",
+			"./res/shaders/particle-transform-shader.glsl",
+			"./res/shaders/billboard-shader.glsl"};
 	String shaderNames[] = {"basic-shader", "skinned-shader", "font-shader",
 			"skybox-shader", "ocean-shader", "static-mirror-shader",
-			"texture-shader"};
+			"texture-shader", "particle-shader", "billboard-shader"};
 
 	for (uint32 i = 0; i < ARRAY_SIZE_IN_ELEMENTS(shaderFiles); ++i) {
 		shaderText.str("");
 		StringUtil::loadTextFileWithIncludes(shaderText, shaderFiles[i], "#include");
-		shaders.insert(std::make_pair(shaderNames[i],
-				std::make_shared<Shader>(device, shaderText.str()) ) );
+
+		if (shaderNames[i].compare("particle-shader") == 0) {
+			const char* varyings[] = {"type1", "position1", "velocity1", "age1", "transScale1"};
+			RenderDevice::FeedbackShaderParams fsp;
+			fsp.varyings = const_cast<char**>(varyings);
+			fsp.numVaryings = 5;
+
+			shaders.insert(std::make_pair(shaderNames[i],
+					std::make_shared<Shader>(device, shaderText.str(), &fsp) ) );
+		}
+		else {
+			shaders.insert(std::make_pair(shaderNames[i],
+					std::make_shared<Shader>(device, shaderText.str()) ) );
+		}
 	}
 
 	IndexedModel quad;

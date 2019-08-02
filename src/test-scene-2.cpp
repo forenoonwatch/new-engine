@@ -80,7 +80,7 @@ class FloatSystem : public BaseECSSystem {
 			Vector3f pos = transform.getTranslation();
 
 			transform.setTranslation(Vector3f(pos[0], height(pos[0], pos[2]), pos[2])
-					+ Vector3f(0.f, 0.f, delta));
+					/*+ Vector3f(0.f, 0.f, delta)*/);
 			transform.setRotation(transform.getRotation().slerp(Quaternion::fromAxes(rht, up, fwd), 0.2));
 		}
 	private:
@@ -89,8 +89,9 @@ class FloatSystem : public BaseECSSystem {
 			x *= SPACE_SCALE;
 			y *= SPACE_SCALE;
 
-			return AMPLITUDE * cnoise(x + t, y + t)
-					* cnoise(-0.75 * x + 0.5 * t, -0.75 * y + 0.5 * t);
+			return 0;
+			//return AMPLITUDE * cnoise(x + t, y + t)
+			//		* cnoise(-0.75 * x + 0.5 * t, -0.75 * y + 0.5 * t);
 		}
 };
 
@@ -171,6 +172,28 @@ int TestScene2::load(Game& game) {
 
 	game.getECS().makeEntity(transformComponent, skinnedMesh, animatorComponent);*/
 
+	Particle baseParticle;
+	baseParticle.position[0] = 1.f;
+	baseParticle.position[2] = 10.f;
+	baseParticle.velocity[1] = 2.5f;
+	baseParticle.transScale[0] = 1.f;
+	baseParticle.transScale[1] = 0.f;
+	baseParticle.transScale[2] = 0.f;
+	baseParticle.transScale[3] = 0.5f;
+	ParticleEmitter pe(baseParticle);
+	uintptr attribSizes[] = {1, 3, 3, 1, 4};
+
+	FeedbackBuffer fb(game.getRenderDevice(), 200 * sizeof(Particle),
+			attribSizes, 5, 3, (const float*)&baseParticle, sizeof(Particle));
+
+	ParticleEmitterComponent pec;
+	pec.emitter = &pe;
+	pec.feedbackBuffer = &fb;
+	pec.shader = &game.getAssetManager().getShader("particle-shader");
+	pec.texture = &game.getAssetManager().getTexture("Smoke");
+
+	game.getECS().makeEntity(pec);
+
 	RenderableText renderableText;
 	renderableText.font = &game.getAssetManager().getFont("LucidaTypewriterRegular24");
 	renderableText.text = "FPS: --";
@@ -188,23 +211,27 @@ int TestScene2::load(Game& game) {
 	OrbitCameraSystem cfs(game.getECS(), game.getEventHandler());
 	//AnimatorSystem animatorSystem;
 	FPSUpdateSystem fpsSystem(game);
+	ParticleUpdateSystem puSystem(game.getRenderContext());
 
 	RenderableMeshSystem rmSystem(game.getRenderContext());
 	//SkinnedMeshSystem smSystem(game.getRenderContext());
 	TextRenderingSystem frSystem(game.getRenderContext());
+	ParticleRenderSystem prSystem(game.getRenderContext());
 
 	//game.getMainSystems().addSystem(ss);
 	game.getMainSystems().addSystem(fs);
 	//game.getMainSystems().addSystem(mcSystem);
 	//game.getMainSystems().addSystem(motionSystem);
 	game.getMainSystems().addSystem(cfs);
+	//game.getMainSystems().addSystem(puSystem);
 	game.getMainSystems().addSystem(fpsSystem);
 	//game.getMainSystems().addSystem(animatorSystem);
 
 	game.getRenderPipeline().addSystem(cameraSystem);
 	game.getRenderPipeline().addSystem(rmSystem);
+	game.getRenderPipeline().addSystem(prSystem);
 	//game.getRenderPipeline().addSystem(smSystem);
-	game.getRenderPipeline().addSystem(frSystem);
+	//game.getRenderPipeline().addSystem(frSystem);
 
 	game.startLoop();
 	return 0;

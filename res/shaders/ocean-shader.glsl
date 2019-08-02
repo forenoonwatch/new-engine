@@ -33,8 +33,9 @@ layout (std140) uniform ShaderData {
 };
 
 float height(vec2 xy) {
-	return AMPLITUDE * cnoise(SPACE_SCALE * (xy + cameraPosition.xz) + TIME_SCALE * vec2(time))
-		* cnoise(-SPACE_SCALE * 0.75 * (xy + cameraPosition.xz) + 0.5 * TIME_SCALE * vec2(time));
+	return 0;
+	//return AMPLITUDE * cnoise(SPACE_SCALE * (xy + cameraPosition.xz) + TIME_SCALE * vec2(time))
+	//	* cnoise(-SPACE_SCALE * 0.75 * (xy + cameraPosition.xz) + 0.5 * TIME_SCALE * vec2(time));
 }
 
 void main() {

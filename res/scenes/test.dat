@@ -8,6 +8,7 @@ TEXTURE WaterNormal "./res/textures/water-normal.png"
 TEXTURE WaterDUDV "./res/textures/water-dudv.png"
 TEXTURE Wood "./res/textures/wood-planks.dds"
 TEXTURE WoodNormal "./res/textures/wood-planks-normal.dds"
+TEXTURE Smoke "./res/textures/smoke.dds"
 
 MATERIAL Bricks Bricks BricksNormal
 MATERIAL Grass Grass DefaultNormal
