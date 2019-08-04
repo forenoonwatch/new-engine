@@ -30,7 +30,7 @@ class GameRenderContext : public RenderContext {
 				const Matrix& transform, Rig& rig);
 		void renderText(Font& font, const String& text,
 				const Vector3f& color, float x, float y);
-		void renderParticleEmitter(FeedbackBuffer& particleBuffer, Texture& texture);
+		void renderParticleEmitter(ParticleEmitter& particleEmitter, Texture& texture);
 
 		void flush();
 
@@ -110,7 +110,7 @@ class GameRenderContext : public RenderContext {
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> mirrorMeshRenderBuffer;
 		TreeMap<Font*, Text> textRenderBuffer;
-		TreeMap<Texture*, Array<FeedbackBuffer*>> particleRenderBuffer;
+		TreeMap<Texture*, Array<ParticleEmitter*>> particleRenderBuffer;
 };
 
 #include "game-render-context.inl"

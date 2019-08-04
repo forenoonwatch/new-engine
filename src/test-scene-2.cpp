@@ -57,10 +57,13 @@ class FloatSystem : public BaseECSSystem {
 				: BaseECSSystem() {
 			addComponentType(TransformComponent::ID);
 			addComponentType(RenderableMeshComponent::ID);
+			addComponentType(ParticleEmitterComponent::ID);
 		}
 
 		virtual void updateComponents(float delta, BaseECSComponent** components) override {
 			Transform& transform = ((TransformComponent*)components[0])->transform;
+			ParticleEmitterComponent* pec = (ParticleEmitterComponent*)components[2];
+
 			Matrix m = transform.toMatrix();
 
 			Vector3f fwd = transform.getTranslation() + (m[2] * Vector::load1f(SHIP_LENGTH));
@@ -80,8 +83,13 @@ class FloatSystem : public BaseECSSystem {
 			Vector3f pos = transform.getTranslation();
 
 			transform.setTranslation(Vector3f(pos[0], height(pos[0], pos[2]), pos[2])
-					/*+ Vector3f(0.f, 0.f, delta)*/);
+					+ Vector3f(0.f, 0.f, delta));
 			transform.setRotation(transform.getRotation().slerp(Quaternion::fromAxes(rht, up, fwd), 0.2));
+			//pec->emitter->setPosition(pos[0], 0.f, pos[2]);
+
+			Vector3f emitPos = pos + (fwd * -2.1f) + (up * -0.1f) + (rht * 0.5f);
+			pec->emitter->setPosition(emitPos);
+			//pec->emitter->setVelocity(fwd * 5.f);
 		}
 	private:
 		inline float height(float x, float y) const {
@@ -89,9 +97,9 @@ class FloatSystem : public BaseECSSystem {
 			x *= SPACE_SCALE;
 			y *= SPACE_SCALE;
 
-			return 0;
-			//return AMPLITUDE * cnoise(x + t, y + t)
-			//		* cnoise(-0.75 * x + 0.5 * t, -0.75 * y + 0.5 * t);
+			//return 0;
+			return AMPLITUDE * cnoise(x + t, y + t)
+					* cnoise(-0.75 * x + 0.5 * t, -0.75 * y + 0.5 * t);
 		}
 };
 
@@ -139,8 +147,22 @@ int TestScene2::load(Game& game) {
 	transformComponent.transform.setRotation(Quaternion(Vector3f(0.f, 1.f, 0.f), 2.27f));
 	//transformComponent.transform.setScale(Vector3f(30, 30, 30));
 	//transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 1.65f));
+	//
+	uintptr attribSizes[] = {1, 3, 3, 1, 4};
 
-	EntityHandle ship = game.getECS().makeEntity(transformComponent, renderableMesh);
+	ParticleEmitter pe(game.getRenderDevice(), 200, attribSizes, 5);
+	pe.setPosition(1.f, 0.f, 10.f);
+	//pe.setVelocity(0.f, 2.5f, 0.f);
+	pe.setVelocity(0.f, 0.f, 0.f);
+	pe.setTransparency(1.f, 0.25f);
+	pe.setScale(0.f, 0.3f);
+
+	ParticleEmitterComponent pec;
+	pec.emitter = &pe;
+	pec.shader = &game.getAssetManager().getShader("particle-shader");
+	pec.texture = &game.getAssetManager().getTexture("Smoke");
+
+	EntityHandle ship = game.getECS().makeEntity(transformComponent, renderableMesh, pec);
 
 	CameraComponent cameraComponent(game.getRenderContext().getCamera());
 	transformComponent.transform.setTranslation(Vector3f(0.f, 0.f, 0.f));
@@ -172,27 +194,19 @@ int TestScene2::load(Game& game) {
 
 	game.getECS().makeEntity(transformComponent, skinnedMesh, animatorComponent);*/
 
-	Particle baseParticle;
+	/*Particle baseParticle;
 	baseParticle.position[0] = 1.f;
 	baseParticle.position[2] = 10.f;
 	baseParticle.velocity[1] = 2.5f;
 	baseParticle.transScale[0] = 1.f;
 	baseParticle.transScale[1] = 0.f;
 	baseParticle.transScale[2] = 0.f;
-	baseParticle.transScale[3] = 0.5f;
-	ParticleEmitter pe(baseParticle);
-	uintptr attribSizes[] = {1, 3, 3, 1, 4};
+	baseParticle.transScale[3] = 0.5f;*/
 
-	FeedbackBuffer fb(game.getRenderDevice(), 200 * sizeof(Particle),
-			attribSizes, 5, 3, (const float*)&baseParticle, sizeof(Particle));
+	//FeedbackBuffer fb(game.getRenderDevice(), 200 * sizeof(Particle),
+	//		attribSizes, 5, 3, (const float*)&baseParticle, sizeof(Particle));
 
-	ParticleEmitterComponent pec;
-	pec.emitter = &pe;
-	pec.feedbackBuffer = &fb;
-	pec.shader = &game.getAssetManager().getShader("particle-shader");
-	pec.texture = &game.getAssetManager().getTexture("Smoke");
-
-	game.getECS().makeEntity(pec);
+	//game.getECS().makeEntity(pec);
 
 	RenderableText renderableText;
 	renderableText.font = &game.getAssetManager().getFont("LucidaTypewriterRegular24");
@@ -211,7 +225,6 @@ int TestScene2::load(Game& game) {
 	OrbitCameraSystem cfs(game.getECS(), game.getEventHandler());
 	//AnimatorSystem animatorSystem;
 	FPSUpdateSystem fpsSystem(game);
-	ParticleUpdateSystem puSystem(game.getRenderContext());
 
 	RenderableMeshSystem rmSystem(game.getRenderContext());
 	//SkinnedMeshSystem smSystem(game.getRenderContext());
@@ -223,7 +236,6 @@ int TestScene2::load(Game& game) {
 	//game.getMainSystems().addSystem(mcSystem);
 	//game.getMainSystems().addSystem(motionSystem);
 	game.getMainSystems().addSystem(cfs);
-	//game.getMainSystems().addSystem(puSystem);
 	game.getMainSystems().addSystem(fpsSystem);
 	//game.getMainSystems().addSystem(animatorSystem);
 

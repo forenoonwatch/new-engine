@@ -14,6 +14,6 @@ inline void GameRenderContext::renderSkinnedMesh(VertexArray& vertexArray,
 			camera.viewProjection * transform, transform, &rig);
 }
 
-inline void GameRenderContext::renderParticleEmitter(FeedbackBuffer& particleBuffer, Texture& texture) {
-	particleRenderBuffer[&texture].push_back(&particleBuffer);
+inline void GameRenderContext::renderParticleEmitter(ParticleEmitter& particleEmitter, Texture& texture) {
+	particleRenderBuffer[&texture].push_back(&particleEmitter);
 }

@@ -230,9 +230,13 @@ class OpenGLRenderDevice {
 		uint32 releaseShaderProgram(uint32 shader);
 
 		uint32 createFeedbackBuffer(const float* initialData, uintptr dataSize,
-				uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs, uint32 outputSize);
+				uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs);
 		void updateFeedbackBuffer(uint32 shader, uint32 feedbackBuffer);
 		void releaseFeedbackBuffer(uint32 feedbackBuffer);
+
+		void writeFeedbackBufferData(uint32 feedbackBuffer, const void* data, uintptr dataSize);
+		void writeFeedbackBufferData(uint32 feedbackBuffer, const void* data,
+				uintptr offset, uintptr dataSize);
 
 		void setClipEnabled(bool enabled, uint32 plane = 0);
 		void setRasterizerDiscardEnabled(bool enabled);
@@ -280,7 +284,6 @@ class OpenGLRenderDevice {
 			uint32 numAttribs;
 
 			uintptr dataSize;
-			uint32 outputSize;
 			
 			uint32 currVB;
 			uint32 currTFB;
@@ -299,8 +302,6 @@ class OpenGLRenderDevice {
 		HashMap<uint32, ShaderProgram> shaderProgramMap;
 		HashMap<uint32, GBuffer> geometryBufferMap;
 		HashMap<uint32, FeedbackBuffer> feedbackBufferMap;
-
-		uint32 fbmCounter;
 
 		uint32 boundFBO;
 		uint32 viewportFBO;

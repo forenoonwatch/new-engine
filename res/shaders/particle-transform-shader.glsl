@@ -55,7 +55,7 @@ void main() {
 
 	if (type0[0] == PARTICLE_TYPE_EMITTER) {
 		if (age >= LAUNCH_FREQUENCY) {
-			type1 = PARTICLE_TYPE_OBJECT;
+			type1 = PARTICLE_TYPE_EMITTER;
 			position1 = position0[0];
 			velocity1 = velocity0[0];
 			age1 = 0.0;
@@ -64,17 +64,25 @@ void main() {
 			EmitVertex();
 			EndPrimitive();
 
-			age = 0.0;
+			type1 = PARTICLE_TYPE_OBJECT;
+			position1 = position0[0];
+			velocity1 = velocity0[0];
+			age1 = 0.0;
+			transScale1 = transScale0[0];
+
+			EmitVertex();
+			EndPrimitive();
 		}
+		else {
+			type1 = PARTICLE_TYPE_EMITTER;
+			position1 = position0[0];
+			velocity1 = velocity0[0];
+			age1 = age;
+			transScale1 = transScale0[0];
 
-		type1 = PARTICLE_TYPE_EMITTER;
-		position1 = position0[0];
-		velocity1 = velocity0[0];
-		age1 = age;
-		transScale1 = transScale0[0];
-
-		EmitVertex();
-		EndPrimitive();
+			EmitVertex();
+			EndPrimitive();
+		}
 	}
 	else {
 		if (age < PARTICLE_LIFE_TIME) {

@@ -321,7 +321,7 @@ inline void GameRenderContext::flushParticles() {
 		}
 
 		for (uint32 i = 0; i < numParticleEmitters; ++i) {
-			updateFeedbackBuffer(particleShader, *it->second[i]);
+			updateFeedbackBuffer(particleShader, it->second[i]->getBuffer());
 		}
 	}
 
@@ -347,7 +347,7 @@ inline void GameRenderContext::flushParticles() {
 		}
 
 		for (uint32 i = 0; i < numParticleEmitters; ++i) {
-			draw(billboardShader, *it->second[i], drawParams);
+			draw(billboardShader, it->second[i]->getBuffer(), drawParams);
 		}
 
 		it->second.clear();

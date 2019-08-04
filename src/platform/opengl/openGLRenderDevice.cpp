@@ -62,7 +62,6 @@ bool OpenGLRenderDevice::globalInit() {
 OpenGLRenderDevice::OpenGLRenderDevice(Window& window)
 		: shaderVersion("")
 		, version(0)
-		, fbmCounter(0)
 		, boundFBO(0)
 		, viewportFBO(0)
 		, boundVAO(0)
@@ -309,18 +308,19 @@ void OpenGLRenderDevice::setDepthTest(bool shouldWrite, enum DrawFunc depthFunc)
 void OpenGLRenderDevice::setStencilTest(bool enable, enum DrawFunc stencilFunc,
 		uint32 stencilTestMask, uint32 stencilWriteMask, int32 stencilComparisonVal,
 		enum StencilOp stencilFail, enum StencilOp stencilPassButDepthFail,
-		enum StencilOp stencilPass)
-{
-	if(enable != stencilTestEnabled) {
-		if(enable) {
+		enum StencilOp stencilPass) {
+	if (enable != stencilTestEnabled) {
+		if (enable) {
 			glEnable(GL_STENCIL_TEST);
-		} else {
+		}
+		else {
 			glDisable(GL_STENCIL_TEST);
 		}
+
 		stencilTestEnabled = enable;
 	}
 
-	if(stencilFunc != currentStencilFunc || stencilTestMask != currentStencilTestMask
+	if (stencilFunc != currentStencilFunc || stencilTestMask != currentStencilTestMask
 			|| stencilComparisonVal != currentStencilComparisonVal) {
 		glStencilFunc(stencilFunc, stencilTestMask, stencilComparisonVal);
 		currentStencilComparisonVal = stencilComparisonVal;
@@ -328,7 +328,7 @@ void OpenGLRenderDevice::setStencilTest(bool enable, enum DrawFunc stencilFunc,
 		currentStencilFunc = stencilFunc;
 	}
 
-	if(stencilFail != currentStencilFail || stencilPass != currentStencilPass
+	if (stencilFail != currentStencilFail || stencilPass != currentStencilPass
 			|| stencilPassButDepthFail != currentStencilPassButDepthFail) {
 		glStencilOp(stencilFail, stencilPassButDepthFail, stencilPass);
 		currentStencilFail = stencilFail;
@@ -919,8 +919,7 @@ uint32 OpenGLRenderDevice::releaseShaderProgram(uint32 shader) {
 }
 
 uint32 OpenGLRenderDevice::createFeedbackBuffer(const float* initialData,
-		uintptr dataSize, uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs,
-		uint32 outputSize) {
+		uintptr dataSize, uintptr bufferSize, uintptr* attribSizes, uint32 numAttribs) {
 	FeedbackBuffer fb;
 
 	GLuint vao;
@@ -932,7 +931,6 @@ uint32 OpenGLRenderDevice::createFeedbackBuffer(const float* initialData,
 	fb.attribSizes = new uintptr[numAttribs];
 	Memory::memcpy(fb.attribSizes, attribSizes, numAttribs * sizeof(uintptr));
 	fb.numAttribs = numAttribs;
-	fb.outputSize = outputSize;
 	
 	fb.currVB = 0;
 	fb.currTFB = 1;
@@ -950,15 +948,9 @@ uint32 OpenGLRenderDevice::createFeedbackBuffer(const float* initialData,
 		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fb.dataBuffers[i]);
 	}
 
-	//initFeedbackBuffer(&fb);
-
-	//uint32 newIndex = fbmCounter;
-	//++fbmCounter;
-	
-	//feedbackBufferMap[newIndex] = fb;
 	feedbackBufferMap[vao] = fb;
 
-	return vao;//newIndex;
+	return vao;
 }
 
 void OpenGLRenderDevice::updateFeedbackBuffer(uint32 shader, uint32 feedbackBuffer) {
@@ -966,8 +958,6 @@ void OpenGLRenderDevice::updateFeedbackBuffer(uint32 shader, uint32 feedbackBuff
 
 	setShader(shader);
 	setVAO(feedbackBuffer);
-
-	//glEnable(GL_RASTERIZER_DISCARD);
 
 	glBindBuffer(GL_ARRAY_BUFFER, fb->dataBuffers[fb->currVB]);
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fb->transformFeedbacks[fb->currTFB]);
@@ -992,8 +982,30 @@ void OpenGLRenderDevice::updateFeedbackBuffer(uint32 shader, uint32 feedbackBuff
 	}
 
 	glEndTransformFeedback();
+}
 
-	//glDisable(GL_RASTERIZER_DISCARD);
+void OpenGLRenderDevice::writeFeedbackBufferData(uint32 feedbackBuffer,
+		const void* data, uintptr dataSize) {
+	struct FeedbackBuffer* fb = &feedbackBufferMap[feedbackBuffer];
+
+	setVAO(feedbackBuffer);
+
+	for (uint32 i = 0; i < 2; ++i) {
+		glBindBuffer(GL_ARRAY_BUFFER, fb->dataBuffers[i]);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize, data);
+	}
+}
+
+void OpenGLRenderDevice::writeFeedbackBufferData(uint32 feedbackBuffer,
+		const void* data, uintptr offset, uintptr dataSize) {
+	struct FeedbackBuffer* fb = &feedbackBufferMap[feedbackBuffer];
+
+	setVAO(feedbackBuffer);
+
+	for (uint32 i = 0; i < 2; ++i) {
+		glBindBuffer(GL_ARRAY_BUFFER, fb->dataBuffers[i]);
+		glBufferSubData(GL_ARRAY_BUFFER, offset, dataSize, data);
+	}
 }
 
 void OpenGLRenderDevice::drawFeedbackBuffer(uint32 fbo, uint32 shader,
@@ -1011,9 +1023,7 @@ void OpenGLRenderDevice::drawFeedbackBuffer(uint32 fbo, uint32 shader,
 	setShader(shader);
 	setVAO(feedbackBuffer);
 
-	//glDepthMask(false);
 	glDrawTransformFeedback(GL_POINTS, fb->transformFeedbacks[fb->currTFB]);
-	//glDepthMask(true);
 
 	fb->currVB = fb->currTFB;
 	fb->currTFB = (fb->currTFB + 1) & 0x1;
