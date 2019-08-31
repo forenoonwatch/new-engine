@@ -148,19 +148,20 @@ int TestScene2::load(Game& game) {
 	//transformComponent.transform.setScale(Vector3f(30, 30, 30));
 	//transformComponent.transform.setRotation(Quaternion(Vector3f(1.f, 0.f, 0.f), 1.65f));
 	//
-	uintptr attribSizes[] = {1, 3, 3, 1, 4};
 
-	ParticleEmitter pe(game.getRenderDevice(), 200, attribSizes, 5);
+	//ParticleEmitter pe(game.getRenderDevice(), 200, attribSizes, 5);
+	ParticleEmitter& pe = game.getRenderContext().getParticleSystem()
+			.createEmitter(&game.getAssetManager().getTexture("Smoke"));
 	pe.setPosition(1.f, 0.f, 10.f);
 	//pe.setVelocity(0.f, 2.5f, 0.f);
 	pe.setVelocity(0.f, 0.f, 0.f);
 	pe.setTransparency(1.f, 0.25f);
 	pe.setScale(0.f, 0.3f);
 
-	ParticleEmitterComponent pec;
-	pec.emitter = &pe;
-	pec.shader = &game.getAssetManager().getShader("particle-shader");
-	pec.texture = &game.getAssetManager().getTexture("Smoke");
+	//ParticleEmitterComponent pec;
+	//pec.emitter = &pe;
+	//pec.shader = &game.getAssetManager().getShader("particle-shader");
+	//pec.texture = &game.getAssetManager().getTexture("Smoke");
 
 	EntityHandle ship = game.getECS().makeEntity(transformComponent, renderableMesh, pec);
 
@@ -229,7 +230,7 @@ int TestScene2::load(Game& game) {
 	RenderableMeshSystem rmSystem(game.getRenderContext());
 	//SkinnedMeshSystem smSystem(game.getRenderContext());
 	TextRenderingSystem frSystem(game.getRenderContext());
-	ParticleRenderSystem prSystem(game.getRenderContext());
+	//ParticleRenderSystem prSystem(game.getRenderContext());
 
 	//game.getMainSystems().addSystem(ss);
 	game.getMainSystems().addSystem(fs);
@@ -241,7 +242,7 @@ int TestScene2::load(Game& game) {
 
 	game.getRenderPipeline().addSystem(cameraSystem);
 	game.getRenderPipeline().addSystem(rmSystem);
-	game.getRenderPipeline().addSystem(prSystem);
+	//game.getRenderPipeline().addSystem(prSystem);
 	//game.getRenderPipeline().addSystem(smSystem);
 	//game.getRenderPipeline().addSystem(frSystem);
 

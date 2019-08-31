@@ -2,6 +2,8 @@
 
 #include "core/timing.hpp"
 
+#define MAX_PARTICLES 200
+
 static constexpr size_t DATA_BUFFER_SIZE = /*sizeof(Matrix) * Rig::MAX_JOINTS 
 		+ */sizeof(float) + 3 * (3 * sizeof(float)) + sizeof(float) + 3 * sizeof(float);
 static constexpr size_t ANIM_BUFFER_SIZE = sizeof(Matrix) * Rig::MAX_JOINTS;
@@ -49,12 +51,17 @@ GameRenderContext::GameRenderContext(RenderDevice& device, RenderTarget& target,
 			, skyboxMesh(assetManager.getVertexArray("skybox-mesh"))
 			, skybox(nullptr)
 			, ocean(nullptr)
+			, particleSystem(nullptr)
 			, oceanNormal(nullptr)
 			, oceanDUDV(nullptr)
 			, dataBuffer(device, DATA_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, animBuffer(device, ANIM_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, fontBuffer(device, FONT_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW)
 			, particleBuffer(device, PARTICLE_BUFFER_SIZE, RenderDevice::USAGE_DYNAMIC_DRAW) {
+	uintptr attribSizes[] = {1, 3, 3, 1, 4};
+	particleSystem = new ParticleSystem(device, MAX_PARTICLES,
+			attribSizes, ARRAY_SIZE_IN_ELEMENTS(attribSizes));
+
 	//staticMeshShader.setBufferBlock("ShaderData", 0);
 	staticMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
 	skinnedMeshShader.setUniformBuffer("ShaderData", dataBuffer, 0);
@@ -312,7 +319,8 @@ inline void GameRenderContext::flushParticles() {
 
 	getDevice().setRasterizerDiscardEnabled(true);
 
-	for (auto it = std::begin(particleRenderBuffer), end = std::end(particleRenderBuffer);
+	/*for (auto it = std::begin(particleSystem->getEmitters()),
+			end = std::end(particleSystem->getEmitters());
 			it != end; ++it) {
 		numParticleEmitters = it->second.size();
 
@@ -321,9 +329,10 @@ inline void GameRenderContext::flushParticles() {
 		}
 
 		for (uint32 i = 0; i < numParticleEmitters; ++i) {
-			updateFeedbackBuffer(particleShader, it->second[i]->getBuffer());
+			//updateFeedbackBuffer(particleShader, it->second[i]->getBuffer());
+			updateFeedbackBuffer(particleShader, particleSystem->getBuffer());
 		}
-	}
+	}*/
 
 	getDevice().setRasterizerDiscardEnabled(false);
 	getDevice().setDepthMaskEnabled(false);
@@ -331,7 +340,8 @@ inline void GameRenderContext::flushParticles() {
 	particleBuffer.update(&camera.viewProjection, sizeof(Matrix));
 	particleBuffer.update(&camera.position, sizeof(Matrix), 3 * sizeof(float));
 
-	for (auto it = std::begin(particleRenderBuffer), end = std::end(particleRenderBuffer);
+	/*for (auto it = std::begin(particleSystem->getEmitters()),
+			end = std::end(particleSystem->getEmitters());
 			it != end; ++it) {
 		numParticleEmitters = it->second.size();
 
@@ -347,11 +357,16 @@ inline void GameRenderContext::flushParticles() {
 		}
 
 		for (uint32 i = 0; i < numParticleEmitters; ++i) {
-			draw(billboardShader, it->second[i]->getBuffer(), drawParams);
+			//draw(billboardShader, it->second[i]->getBuffer(), drawParams);
+			draw(billboardShader, particleSystem->getBuffer(), drawParams);
 		}
 
-		it->second.clear();
-	}
+		//it->second.clear();
+	}*/
 
 	getDevice().setDepthMaskEnabled(true);
+}
+
+GameRenderContext::~GameRenderContext() {
+	delete particleSystem;
 }

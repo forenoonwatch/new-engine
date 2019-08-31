@@ -15,6 +15,7 @@
 
 class Particle;
 class ParticleEmitter;
+class ParticleSystem;
 
 // TODO: replace Texture with Material DONE
 // TODO: add proper sorting and draw tag command whatever things
@@ -30,7 +31,6 @@ class GameRenderContext : public RenderContext {
 				const Matrix& transform, Rig& rig);
 		void renderText(Font& font, const String& text,
 				const Vector3f& color, float x, float y);
-		void renderParticleEmitter(ParticleEmitter& particleEmitter, Texture& texture);
 
 		void flush();
 
@@ -42,6 +42,9 @@ class GameRenderContext : public RenderContext {
 		}
 
 		inline Camera& getCamera() { return camera; }
+		inline ParticleSystem& getParticleSystem() { return *particleSystem; }
+
+		~GameRenderContext();
 	private:
 		struct SkinnedMesh {
 			inline SkinnedMesh(const Matrix& mvp,
@@ -92,6 +95,8 @@ class GameRenderContext : public RenderContext {
 
 		Camera camera;
 		Matrix screenProjection;
+
+		ParticleSystem* particleSystem;
 		
 		VertexArray& textQuad;
 		VertexArray& skyboxMesh;
@@ -110,7 +115,6 @@ class GameRenderContext : public RenderContext {
 		TreeMap<Pair<VertexArray*, Material*>, Array<SkinnedMesh>> skinnedMeshRenderBuffer;
 		TreeMap<Pair<VertexArray*, Material*>, Array<Matrix>> mirrorMeshRenderBuffer;
 		TreeMap<Font*, Text> textRenderBuffer;
-		TreeMap<Texture*, Array<ParticleEmitter*>> particleRenderBuffer;
 };
 
 #include "game-render-context.inl"

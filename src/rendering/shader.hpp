@@ -4,8 +4,6 @@
 #include "material.hpp"
 #include "sampler.hpp"
 
-#include "math/matrix.hpp"
-
 class Shader {
 	public:
 		inline Shader(RenderDevice& deviceIn, const String& text,

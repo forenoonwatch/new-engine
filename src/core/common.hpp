@@ -92,6 +92,7 @@ typedef uintptr_t uintptr;
 #endif
 
 #define NULL_COPY_AND_ASSIGN(T) \
+	T(T&& other) = delete; \
 	T(const T& other) = delete; \
 	void operator=(const T& other) = delete;
 

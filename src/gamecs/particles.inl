@@ -1,52 +1,49 @@
 
 inline void ParticleEmitter::setPosition(float x, float y, float z) {
-	emitterData.position[0] = x;
-	emitterData.position[1] = y;
-	emitterData.position[2] = z;
+	const float data[] = {x, y, z};
 
-	feedbackBuffer.update(emitterData.position,
-			Particle::POSITION_OFFSET, Particle::POSITION_SIZE);
+	particleSystem->getBuffer().update(data,
+			getOffset() + Particle::POSITION_OFFSET, Particle::POSITION_SIZE);
 }
 
 inline void ParticleEmitter::setPosition(const Vector3f& position) {
-	emitterData.position[0] = position[0];
-	emitterData.position[1] = position[1];
-	emitterData.position[2] = position[2];
-
-	feedbackBuffer.update(emitterData.position,
-			Particle::POSITION_OFFSET, Particle::POSITION_SIZE);
+	particleSystem->getBuffer().update(&position,
+			getOffset() + Particle::POSITION_OFFSET, Particle::POSITION_SIZE);
 }
 
 inline void ParticleEmitter::setVelocity(float x, float y, float z) {
-	emitterData.velocity[0] = x;
-	emitterData.velocity[1] = y;
-	emitterData.velocity[2] = z;
+	const float data[] = {x, y, z};
 
-	feedbackBuffer.update(emitterData.velocity,
-			Particle::VELOCITY_OFFSET, Particle::VELOCITY_SIZE);
+	particleSystem->getBuffer().update(data,
+			getOffset() + Particle::VELOCITY_OFFSET, Particle::VELOCITY_SIZE);
 }
 
 inline void ParticleEmitter::setVelocity(const Vector3f& velocity) {
-	emitterData.velocity[0] = velocity[0];
-	emitterData.velocity[1] = velocity[1];
-	emitterData.velocity[2] = velocity[2];
-
-	feedbackBuffer.update(emitterData.velocity,
-			Particle::VELOCITY_OFFSET, Particle::VELOCITY_SIZE);
+	particleSystem->getBuffer().update(&velocity,
+			getOffset() + Particle::VELOCITY_OFFSET, Particle::VELOCITY_SIZE);
 }
 
 inline void ParticleEmitter::setTransparency(float start, float end) {
-	emitterData.transScale[0] = start;
-	emitterData.transScale[1] = end;
+	const float data[] = {start, end};
 
-	feedbackBuffer.update(emitterData.transScale,
-			Particle::TRANSPARENCY_OFFSET, Particle::TRANSPARENCY_SIZE);
+	particleSystem->getBuffer().update(data,
+			getOffset() + Particle::TRANSPARENCY_OFFSET, Particle::TRANSPARENCY_SIZE);
 }
 
 inline void ParticleEmitter::setScale(float start, float end) {
-	emitterData.transScale[2] = start;
-	emitterData.transScale[3] = end;
+	const float data[] = {start, end};
 
-	feedbackBuffer.update(&emitterData.transScale[2],
-			Particle::SCALE_OFFSET, Particle::SCALE_SIZE);
+	particleSystem->getBuffer().update(data,
+			getOffset() + Particle::SCALE_OFFSET, Particle::SCALE_SIZE);
+}
+
+
+inline ParticleEmitter& ParticleSystem::createEmitter(Texture* texture) {
+	emitters[texture].emplace_back(*this, emitters[texture].size(), texture);
+	return emitters[texture].back();
+}
+
+inline void ParticleSystem::removeEmitter(ParticleEmitter& emitter) {
+	emitters[emitter.texture].back().id = emitter.id;
+	emitters[emitter.texture].swap_remove(emitter.id);
 }

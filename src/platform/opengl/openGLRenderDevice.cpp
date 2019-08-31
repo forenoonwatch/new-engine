@@ -1149,7 +1149,7 @@ static bool addShader(GLuint shaderProgram, const String& text, GLenum type,
 
         glGetShaderInfoLog(shader, 1024, NULL, InfoLog);
         DEBUG_LOG(LOG_TYPE_RENDERER, LOG_ERROR, "Error compiling shader type %d: '%s'\n",
-				shader, InfoLog);	
+				type, InfoLog);	
 		return false;
     }
 
